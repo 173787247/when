@@ -27,19 +27,11 @@ def sha_bytes(data: bytes) -> str: return 'sha256:'+hashlib.sha256(data).hexdige
 def path_hash(patterns: list[str]) -> str:
     entries=[]
     for path in sorted(ROOT.rglob('*')):
-        if not path.is_file() or '.git' in path.parts or '.loop' in path.parts or 'target' in path.parts or '__pycache__' in path.parts or path.suffix in {'.pyc','.pyo'}: continue
+        if not path.is_file() or '.git' in path.parts or '.loop' in path.parts or '__pycache__' in path.parts or path.suffix in {'.pyc','.pyo'}: continue
         rel=path.relative_to(ROOT).as_posix()
         if any(fnmatch.fnmatchcase(rel, p) for p in patterns): entries.append(rel.encode()+b'\0'+hashlib.sha256(path.read_bytes()).digest())
     return sha_bytes(b''.join(entries))
 def read_json(path: pathlib.Path) -> dict[str,Any]: return json.loads(path.read_text(encoding='utf-8'))
-def runtime_environment(env_file: pathlib.Path) -> dict[str,str]:
-    if not env_file.exists(): return {}
-    environment={}
-    for line in env_file.read_text(encoding='utf-8').splitlines():
-        if '=' not in line: continue
-        key,value=line.split('=',1)
-        environment[key]=value.strip("'")
-    return environment
 def atomic_write(path: pathlib.Path, data: dict[str,Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     encoded=(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)+'\n').encode()
@@ -97,15 +89,6 @@ def repo_dirty() -> list[str]:
         paths.append(path)
     return paths
 def checked_branch() -> str: return git('branch','--show-current').stdout.strip()
-def resuming_stage_branch(branch: str, state: dict[str,Any], config: dict[str,Any]) -> bool:
-    """Allow a recovered `run` only on the persisted, active lesson branch."""
-    current=state.get('current_stage')
-    if state.get('status')!='RUNNING' or state.get('current_branch')!=branch or not current:
-        return False
-    record=state.get('stages',{}).get(current,{})
-    if record.get('status') not in {'RUNNING','VERIFYING'}:
-        return False
-    return any(stage['id']==current and stage['branch']==branch for stage in config['stages'])
 def protected_hash(config: dict[str,Any]) -> str: return path_hash(config['protected_paths'])
 def stage_hashes(config: dict[str,Any], stage: dict[str,Any]) -> dict[str,str]:
     inputs=[*config['reference_docs'],config['common_contract'],config['orchestrator_spec'],*stage['specs']]
@@ -137,12 +120,10 @@ class Runner:
     def __init__(self, config: dict[str,Any]): self.config=config; self.state=load_state(config); self.stop_requested=False
     def validate(self) -> None:
         validate_config(self.config)
-        branch=checked_branch()
-        if branch not in ('master','lesson/46') and not resuming_stage_branch(branch,self.state,self.config):
-            raise LoopError('validate requires master, lesson/46, or the persisted active lesson branch',4)
+        if checked_branch() not in ('master','lesson/46'): raise LoopError('validate requires master or lesson/46',4)
         dirty=repo_dirty()
         bootstrap_paths=['AGENTS.md','loop','loop.yaml','.gitignore','harness/']
-        if dirty and not (branch=='lesson/46' and all(any(path==prefix or path.startswith(prefix) for prefix in bootstrap_paths) for path in dirty)):
+        if dirty and not (checked_branch()=='lesson/46' and all(any(path==prefix or path.startswith(prefix) for prefix in bootstrap_paths) for path in dirty)):
             raise LoopError('working tree is not clean: '+', '.join(dirty),4)
         for program in ('git','python3','codex','java','redis-server','etcd'):
             if not shutil.which(program): raise LoopError(f'host executable not found: {program}',7)
@@ -240,8 +221,12 @@ class Runner:
         if agent.get('status')!='completed': return False, 'agent failure: '+agent.get('summary','unknown')
         try:
             self.services(stage,True)
+            env={}
             env_file=ROOT/self.config['runtime']['local_services']['env_file']
-            env=runtime_environment(env_file)
+            if env_file.exists():
+                for line in env_file.read_text().splitlines():
+                    if '=' in line:
+                        key,value=line.split('=',1); env[key]=value.strip("'")
             return command_log(stage['judge']['command'],folder,stage['judge'].get('timeout_seconds',self.config['defaults']['judge_timeout_seconds']),env)
         finally: self.services(stage,False)
     def pass_stage(self,stage:dict[str,Any],attempt:int) -> None:
@@ -256,8 +241,7 @@ class Runner:
         for judge in self.config['final_judges']:
             if failure and not judge.get('always_run'): continue
             judge_dir=folder/'final'/judge['id']; judge_dir.mkdir(parents=True,exist_ok=True)
-            env_file=ROOT/self.config['runtime']['local_services']['env_file']
-            ok,detail=command_log(judge['command'],judge_dir,judge.get('timeout_seconds',1200),runtime_environment(env_file))
+            ok,detail=command_log(judge['command'],judge_dir,judge.get('timeout_seconds',1200))
             results.append({'id':judge['id'],'passed':ok,'detail':detail})
             if not ok and not judge.get('always_run') and failure is None: failure=judge['id']
         report=folder/'final-report.md'; lines=['# When Loop final report','',f"run_id: {self.state['run_id']}",'', '## Lessons']

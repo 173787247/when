@@ -46,11 +46,6 @@ class LoopRunnerTests(unittest.TestCase):
         self.assertEqual(set(hashes), {'spec_hash','output_hash','judge_hash','protected_hash'})
         self.assertTrue(all(value.startswith('sha256:') for value in hashes.values()))
 
-    def test_shared_reactor_pom_is_not_a_stage_output_fingerprint(self):
-        config = runner.read_json(ROOT / 'loop.yaml')
-        for stage in config['stages']:
-            self.assertNotIn('pom.xml', stage['fingerprint_paths'])
-
     def test_fingerprint_ignores_python_runtime_bytecode(self):
         cache = ROOT / 'harness/contracts/__pycache__/fingerprint-test.pyc'
         cache.parent.mkdir(exist_ok=True)
@@ -59,24 +54,6 @@ class LoopRunnerTests(unittest.TestCase):
         after = runner.path_hash(['harness/contracts/**'])
         cache.unlink()
         self.assertEqual(before, after)
-
-    def test_fingerprint_ignores_maven_build_artifacts(self):
-        artifact = ROOT / 'when-common/target/fingerprint-test.txt'
-        artifact.parent.mkdir(exist_ok=True)
-        before = runner.path_hash(['when-common/**'])
-        artifact.write_text('ephemeral')
-        after = runner.path_hash(['when-common/**'])
-        artifact.unlink()
-        self.assertEqual(before, after)
-
-    def test_runtime_environment_reads_local_service_values(self):
-        with tempfile.TemporaryDirectory() as temp:
-            env_file = pathlib.Path(temp) / 'runtime.env'
-            env_file.write_text("WHEN_ETCD_ENDPOINTS='http://127.0.0.1:2379'\nWHEN_REDIS_PORT=6380\n")
-            self.assertEqual(
-                runner.runtime_environment(env_file),
-                {'WHEN_ETCD_ENDPOINTS': 'http://127.0.0.1:2379', 'WHEN_REDIS_PORT': '6380'},
-            )
 
     def test_second_lock_holder_is_rejected(self):
         original_loop_dir, original_lock = runner.LOOP_DIR, runner.LOCK
@@ -98,19 +75,6 @@ class LoopRunnerTests(unittest.TestCase):
         with mock.patch.object(sys, 'argv', ['loop_runner.py', 'run']), mock.patch.object(runner.Runner, 'run', return_value=0) as run:
             self.assertEqual(runner.main(), 0)
             run.assert_called_once()
-
-    def test_only_persisted_active_stage_branch_can_resume(self):
-        config = runner.read_json(ROOT / 'loop.yaml')
-        state = {
-            'status': 'RUNNING',
-            'current_branch': 'lesson/42',
-            'current_stage': 'lesson42',
-            'stages': {'lesson42': {'status': 'VERIFYING'}},
-        }
-        self.assertTrue(runner.resuming_stage_branch('lesson/42', state, config))
-        self.assertFalse(runner.resuming_stage_branch('lesson/43', state, config))
-        state['stages']['lesson42']['status'] = 'PASSED'
-        self.assertFalse(runner.resuming_stage_branch('lesson/42', state, config))
 
 if __name__ == '__main__':
     unittest.main()
