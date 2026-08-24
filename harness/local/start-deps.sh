@@ -31,34 +31,8 @@ if want etcd && ! alive "${LOOP_ETCD_PID:-}"; then
   etcd_client_port="$(free_port)"
   etcd_peer_port="$(free_port)"
   etcd_dir="$(mktemp -d "$runtime_dir/etcd.XXXXXX")"
-  perl -MPOSIX=setsid -e '
-    my ($pid_file, $log_file, @command) = @ARGV;
-    my $first = fork();
-    die "first fork failed: $!\n" unless defined $first;
-    exit 0 if $first;
-    setsid() or die "setsid failed: $!\n";
-    my $second = fork();
-    die "second fork failed: $!\n" unless defined $second;
-    exit 0 if $second;
-    open STDIN, q{<}, q{/dev/null} or die "stdin: $!\n";
-    open STDOUT, q{>>}, $log_file or die "stdout: $!\n";
-    open STDERR, q{>&}, \*STDOUT or die "stderr: $!\n";
-    open my $pid, q{>}, $pid_file or die "pid file: $!\n";
-    print {$pid} "$$\n";
-    close $pid;
-    exec {$command[0]} @command;
-    die "exec failed: $!\n";
-  ' "$etcd_dir/etcd.pid" "$etcd_dir/etcd.log" \
-    etcd --name loop-etcd --data-dir "$etcd_dir" \
-    --listen-client-urls "http://127.0.0.1:$etcd_client_port" \
-    --advertise-client-urls "http://127.0.0.1:$etcd_client_port" \
-    --listen-peer-urls "http://127.0.0.1:$etcd_peer_port" \
-    --initial-advertise-peer-urls "http://127.0.0.1:$etcd_peer_port" \
-    --initial-cluster "loop-etcd=http://127.0.0.1:$etcd_peer_port" \
-    --initial-cluster-state new
-  for _ in 1 2 3 4 5 6 7 8 9 10; do [ -s "$etcd_dir/etcd.pid" ] && break; sleep 0.1; done
-  [ -s "$etcd_dir/etcd.pid" ] || { cat "$etcd_dir/etcd.log" >&2; exit 1; }
-  LOOP_ETCD_PID="$(tr -d '[:space:]' < "$etcd_dir/etcd.pid")"; LOOP_ETCD_PORT="$etcd_client_port"; LOOP_ETCD_DIR="$etcd_dir"
+  etcd --name loop-etcd --data-dir "$etcd_dir" --listen-client-urls "http://127.0.0.1:$etcd_client_port" --advertise-client-urls "http://127.0.0.1:$etcd_client_port" --listen-peer-urls "http://127.0.0.1:$etcd_peer_port" --initial-advertise-peer-urls "http://127.0.0.1:$etcd_peer_port" --initial-cluster "loop-etcd=http://127.0.0.1:$etcd_peer_port" --initial-cluster-state new >"$etcd_dir/etcd.log" 2>&1 &
+  LOOP_ETCD_PID=$!; LOOP_ETCD_PORT="$etcd_client_port"; LOOP_ETCD_DIR="$etcd_dir"
 fi
 
 tmp_env="$env_file.tmp"
@@ -69,10 +43,10 @@ tmp_env="$env_file.tmp"
   printf 'LOOP_ETCD_PID=%q\n' "${LOOP_ETCD_PID:-}"
   printf 'LOOP_ETCD_PORT=%q\n' "${LOOP_ETCD_PORT:-}"
   printf 'LOOP_ETCD_DIR=%q\n' "${LOOP_ETCD_DIR:-}"
-  printf 'export WHEN_REDIS_HOST=127.0.0.1\nexport WHEN_REDIS_PORT=%q\n' "${LOOP_REDIS_PORT:-}"
-  printf 'export WHEN_ETCD_ENDPOINTS=http://127.0.0.1:%q\n' "${LOOP_ETCD_PORT:-}"
-  printf 'export REDIS_URL=redis://127.0.0.1:%q\n' "${LOOP_REDIS_PORT:-}"
-  printf 'export ETCD_ENDPOINTS=http://127.0.0.1:%q\n' "${LOOP_ETCD_PORT:-}"
+  printf 'WHEN_REDIS_HOST=127.0.0.1\nWHEN_REDIS_PORT=%q\n' "${LOOP_REDIS_PORT:-}"
+  printf 'WHEN_ETCD_ENDPOINTS=http://127.0.0.1:%q\n' "${LOOP_ETCD_PORT:-}"
+  printf 'REDIS_URL=redis://127.0.0.1:%q\n' "${LOOP_REDIS_PORT:-}"
+  printf 'ETCD_ENDPOINTS=http://127.0.0.1:%q\n' "${LOOP_ETCD_PORT:-}"
 } > "$tmp_env"
 mv "$tmp_env" "$env_file"
 printf 'local dependencies started: redis=%s etcd=%s\n' "${LOOP_REDIS_PORT:-not-requested}" "${LOOP_ETCD_PORT:-not-requested}"
