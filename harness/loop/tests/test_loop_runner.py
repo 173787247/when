@@ -46,6 +46,15 @@ class LoopRunnerTests(unittest.TestCase):
         self.assertEqual(set(hashes), {'spec_hash','output_hash','judge_hash','protected_hash'})
         self.assertTrue(all(value.startswith('sha256:') for value in hashes.values()))
 
+    def test_fingerprint_ignores_python_runtime_bytecode(self):
+        cache = ROOT / 'harness/contracts/__pycache__/fingerprint-test.pyc'
+        cache.parent.mkdir(exist_ok=True)
+        before = runner.path_hash(['harness/contracts/**'])
+        cache.write_bytes(b'ephemeral')
+        after = runner.path_hash(['harness/contracts/**'])
+        cache.unlink()
+        self.assertEqual(before, after)
+
     def test_second_lock_holder_is_rejected(self):
         original_loop_dir, original_lock = runner.LOOP_DIR, runner.LOCK
         with tempfile.TemporaryDirectory() as temp:

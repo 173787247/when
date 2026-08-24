@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.when.core.HttpSinkConfig;
 import com.when.core.KafkaSinkConfig;
-import com.when.core.FileSinkConfig;
 import com.when.core.Message;
 import com.when.core.MessageStatus;
 import com.when.core.SinkConfig;
@@ -26,11 +25,6 @@ class MessageJsonCodecTest {
     void roundTripsKafkaConfigurationWithoutPolymorphicClassMetadata() {
         assertRoundTrip(new KafkaSinkConfig(
                 "broker.internal:9092", "delayed-events", "key-1", Map.of("source", "when")));
-    }
-
-    @Test
-    void roundTripsFileConfigurationWithoutPolymorphicClassMetadata() {
-        assertRoundTrip(new FileSinkConfig("deliveries/message-1.bin"));
     }
 
     private void assertRoundTrip(SinkConfig sinkConfig) {

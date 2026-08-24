@@ -27,7 +27,7 @@ def sha_bytes(data: bytes) -> str: return 'sha256:'+hashlib.sha256(data).hexdige
 def path_hash(patterns: list[str]) -> str:
     entries=[]
     for path in sorted(ROOT.rglob('*')):
-        if not path.is_file() or '.git' in path.parts or '.loop' in path.parts: continue
+        if not path.is_file() or '.git' in path.parts or '.loop' in path.parts or '__pycache__' in path.parts or path.suffix in {'.pyc','.pyo'}: continue
         rel=path.relative_to(ROOT).as_posix()
         if any(fnmatch.fnmatchcase(rel, p) for p in patterns): entries.append(rel.encode()+b'\0'+hashlib.sha256(path.read_bytes()).digest())
     return sha_bytes(b''.join(entries))
@@ -151,7 +151,14 @@ class Runner:
         for stage in self.config['stages']:
             rec=self.state['stages'].get(stage['id'])
             if invalid or (rec and rec.get('status')=='PASSED' and not self.valid_pass(stage)):
-                if rec and rec.get('protected_hash') != protected_hash(self.config): raise LoopError(f"ENVIRONMENT_ERROR protected input changed for {stage['id']}",7)
+                if rec and rec.get('protected_hash') != protected_hash(self.config):
+                    changed=git('diff','--name-only',f"{rec.get('merge_commit')}..master",'--',*self.config['protected_paths'],check=False).stdout.splitlines()
+                    if changed: raise LoopError(f"ENVIRONMENT_ERROR protected input changed for {stage['id']}: {', '.join(changed)}",7)
+                    rec['protected_hash']=protected_hash(self.config)
+                    rec['fingerprint_migration']='runtime-only protected fingerprint migration'
+                    if self.valid_pass(stage):
+                        self.state['stages'][stage['id']]=rec
+                        continue
                 self.state['stages'][stage['id']]={'lesson':stage['lesson'],'branch':stage['branch'],'status':'PENDING','invalidation_reason':'input/output fingerprint changed'}; invalid=True
         save(self.state)
     def acquire(self):
