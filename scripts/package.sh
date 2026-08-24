@@ -3,7 +3,7 @@
 # requested, synchronize that snapshot to the same branch in a remote Git checkout.
 #
 # Usage:
-#   ./scripts/package.sh [--execute] [output_dir]
+#   ./scripts/package.sh [--execute]
 #
 # The remote synchronization target is fixed for this repository:
 #   root@117.72.92.117:/root/when
@@ -17,7 +17,6 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 EXECUTE=0
-OUTPUT_DIR="$PROJECT_ROOT"
 REMOTE_HOST="root@117.72.92.117"
 REMOTE_DIR="/root/when"
 
@@ -27,11 +26,12 @@ error() { printf '[ERROR] %s\n' "$*" >&2; }
 
 usage() {
   cat <<'USAGE'
-Usage: ./scripts/package.sh [--execute] [output_dir]
+Usage: ./scripts/package.sh [--execute]
 
-Without --execute, create and keep a local tar.gz only.
+Without --execute, create a temporary tar.gz and validate the local packaging flow.
 With --execute, also commit the packageable local paths, upload the archive, extract it
 into the same-name branch at root@117.72.92.117:/root/when, commit there, and push it.
+The local tar.gz is always removed when the script exits.
 USAGE
 }
 
@@ -51,13 +51,9 @@ while [[ $# -gt 0 ]]; do
       exit 2
       ;;
     *)
-      if [[ "$OUTPUT_DIR" != "$PROJECT_ROOT" ]]; then
-        error "only one output directory may be supplied"
-        usage >&2
-        exit 2
-      fi
-      OUTPUT_DIR="$1"
-      shift
+      error "unexpected argument: $1"
+      usage >&2
+      exit 2
       ;;
   esac
 done
@@ -70,17 +66,14 @@ LOCAL_BRANCH="$(git -C "$PROJECT_ROOT" symbolic-ref --quiet --short HEAD || true
 git -C "$PROJECT_ROOT" check-ref-format --branch "$LOCAL_BRANCH" >/dev/null \
   || { error "invalid current branch name: $LOCAL_BRANCH"; exit 1; }
 
-mkdir -p "$OUTPUT_DIR"
-OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
-
 VERSION="$(git -C "$PROJECT_ROOT" describe --tags --always --dirty 2>/dev/null || printf 'dev')"
 SAFE_BRANCH="${LOCAL_BRANCH//\//-}"
 SAFE_VERSION="$(printf '%s' "$VERSION" | tr '/[:space:]' '--')"
 TIMESTAMP="$(date +%Y%m%d%H%M%S)_$$"
-ARCHIVE="$OUTPUT_DIR/when-${SAFE_BRANCH}-${SAFE_VERSION}-${TIMESTAMP}.tar.gz"
-ARCHIVE_NAME="$(basename "$ARCHIVE")"
 
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/when-package.XXXXXX")"
+ARCHIVE="$WORK_DIR/when-${SAFE_BRANCH}-${SAFE_VERSION}-${TIMESTAMP}.tar.gz"
+ARCHIVE_NAME="$(basename "$ARCHIVE")"
 MANIFEST="$WORK_DIR/files.nul"
 DELETED_MANIFEST="$WORK_DIR/deleted.nul"
 PATHS_TO_COMMIT="$WORK_DIR/paths-to-commit.nul"
@@ -137,7 +130,8 @@ COPYFILE_DISABLE=1 tar -czf "$ARCHIVE" -C "$PROJECT_ROOT" --null -T "$MANIFEST"
 info "Archive created ($(du -h "$ARCHIVE" | awk '{print $1}'))"
 
 if [[ "$EXECUTE" -eq 0 ]]; then
-  info "Local package complete. Use --execute to synchronize it to a remote checkout."
+  info "Local packaging flow complete. The temporary archive will be removed on exit."
+  info "Use --execute to synchronize to $REMOTE_HOST:$REMOTE_DIR."
   exit 0
 fi
 
@@ -234,7 +228,7 @@ else
 fi
 REMOTE_SCRIPT
 
-info "Remote sync complete. Archive retained locally: $ARCHIVE"
+info "Remote sync complete. The temporary archive will be removed on exit."
 if git -C "$PROJECT_ROOT" fetch origin "$LOCAL_BRANCH" --quiet; then
   if git -C "$PROJECT_ROOT" diff --quiet "origin/$LOCAL_BRANCH" HEAD; then
     warn "local and remote trees match but may have different commit IDs; no destructive reset was performed"
