@@ -27,7 +27,7 @@ def sha_bytes(data: bytes) -> str: return 'sha256:'+hashlib.sha256(data).hexdige
 def path_hash(patterns: list[str]) -> str:
     entries=[]
     for path in sorted(ROOT.rglob('*')):
-        if not path.is_file() or '.git' in path.parts or '.loop' in path.parts or '__pycache__' in path.parts or path.suffix in {'.pyc','.pyo'}: continue
+        if not path.is_file() or '.git' in path.parts or '.loop' in path.parts: continue
         rel=path.relative_to(ROOT).as_posix()
         if any(fnmatch.fnmatchcase(rel, p) for p in patterns): entries.append(rel.encode()+b'\0'+hashlib.sha256(path.read_bytes()).digest())
     return sha_bytes(b''.join(entries))
@@ -89,15 +89,6 @@ def repo_dirty() -> list[str]:
         paths.append(path)
     return paths
 def checked_branch() -> str: return git('branch','--show-current').stdout.strip()
-def resuming_stage_branch(branch: str, state: dict[str,Any], config: dict[str,Any]) -> bool:
-    """Allow a recovered `run` only on the persisted, active lesson branch."""
-    current=state.get('current_stage')
-    if state.get('status')!='RUNNING' or state.get('current_branch')!=branch or not current:
-        return False
-    record=state.get('stages',{}).get(current,{})
-    if record.get('status') not in {'RUNNING','VERIFYING'}:
-        return False
-    return any(stage['id']==current and stage['branch']==branch for stage in config['stages'])
 def protected_hash(config: dict[str,Any]) -> str: return path_hash(config['protected_paths'])
 def stage_hashes(config: dict[str,Any], stage: dict[str,Any]) -> dict[str,str]:
     inputs=[*config['reference_docs'],config['common_contract'],config['orchestrator_spec'],*stage['specs']]
@@ -129,12 +120,10 @@ class Runner:
     def __init__(self, config: dict[str,Any]): self.config=config; self.state=load_state(config); self.stop_requested=False
     def validate(self) -> None:
         validate_config(self.config)
-        branch=checked_branch()
-        if branch not in ('master','lesson/46') and not resuming_stage_branch(branch,self.state,self.config):
-            raise LoopError('validate requires master, lesson/46, or the persisted active lesson branch',4)
+        if checked_branch() not in ('master','lesson/46'): raise LoopError('validate requires master or lesson/46',4)
         dirty=repo_dirty()
         bootstrap_paths=['AGENTS.md','loop','loop.yaml','.gitignore','harness/']
-        if dirty and not (branch=='lesson/46' and all(any(path==prefix or path.startswith(prefix) for prefix in bootstrap_paths) for path in dirty)):
+        if dirty and not (checked_branch()=='lesson/46' and all(any(path==prefix or path.startswith(prefix) for prefix in bootstrap_paths) for path in dirty)):
             raise LoopError('working tree is not clean: '+', '.join(dirty),4)
         for program in ('git','python3','codex','java','redis-server','etcd'):
             if not shutil.which(program): raise LoopError(f'host executable not found: {program}',7)
@@ -162,14 +151,7 @@ class Runner:
         for stage in self.config['stages']:
             rec=self.state['stages'].get(stage['id'])
             if invalid or (rec and rec.get('status')=='PASSED' and not self.valid_pass(stage)):
-                if rec and rec.get('protected_hash') != protected_hash(self.config):
-                    changed=git('diff','--name-only',f"{rec.get('merge_commit')}..master",'--',*self.config['protected_paths'],check=False).stdout.splitlines()
-                    if changed: raise LoopError(f"ENVIRONMENT_ERROR protected input changed for {stage['id']}: {', '.join(changed)}",7)
-                    rec['protected_hash']=protected_hash(self.config)
-                    rec['fingerprint_migration']='runtime-only protected fingerprint migration'
-                    if self.valid_pass(stage):
-                        self.state['stages'][stage['id']]=rec
-                        continue
+                if rec and rec.get('protected_hash') != protected_hash(self.config): raise LoopError(f"ENVIRONMENT_ERROR protected input changed for {stage['id']}",7)
                 self.state['stages'][stage['id']]={'lesson':stage['lesson'],'branch':stage['branch'],'status':'PENDING','invalidation_reason':'input/output fingerprint changed'}; invalid=True
         save(self.state)
     def acquire(self):
