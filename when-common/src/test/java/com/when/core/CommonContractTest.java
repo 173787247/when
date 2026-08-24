@@ -58,6 +58,23 @@ class CommonContractTest {
                 () -> config.headers().put("another", "value"));
     }
 
+    @Test
+    void replicaContractEnforcesFencingOrderingAndDifferentNodes() {
+        ReplicaOperation operation = new ReplicaOperation(
+                "op-1", "tw-1", 7, 1, OperationType.ADD, "message-1", 2_000);
+        TimeWheelAssignment assignment = new TimeWheelAssignment(
+                "tw-1", "node-1", "node-2", "running", "in_sync", 7);
+
+        assertEquals(7, operation.assignmentVersion());
+        assertEquals(1, operation.sequence());
+        assertTrue(assignment.isMaster("node-1"));
+        assertTrue(assignment.isSlave("node-2"));
+        assertThrows(IllegalArgumentException.class, () -> new TimeWheelAssignment(
+                "tw-1", "node-1", "node-1", "running", "in_sync", 7));
+        assertThrows(IllegalArgumentException.class, () -> new ReplicaOperation(
+                "op-2", "tw-1", 7, 0, OperationType.REMOVE, "message-1", 0));
+    }
+
     private static Message message(byte[] payload) {
         HttpSinkConfig config = new HttpSinkConfig(
                 "https://example.internal/callback", "POST", Map.of(), 5_000);

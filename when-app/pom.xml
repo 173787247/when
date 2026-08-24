@@ -48,11 +48,6 @@
         </dependency>
         <dependency>
             <groupId>com.when</groupId>
-            <artifactId>when-sink-file</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.when</groupId>
             <artifactId>when-delivery</artifactId>
             <version>${project.version}</version>
         </dependency>
