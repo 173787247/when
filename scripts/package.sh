@@ -127,7 +127,8 @@ info "Current branch: $LOCAL_BRANCH"
 info "Packageable files: $file_count"
 info "Deleted paths to mirror: $deleted_count"
 info "Creating archive: $ARCHIVE"
-COPYFILE_DISABLE=1 tar -czf "$ARCHIVE" -C "$PROJECT_ROOT" --null -T "$MANIFEST"
+COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata \
+  -czf "$ARCHIVE" -C "$PROJECT_ROOT" --null -T "$MANIFEST"
 info "Archive created ($(du -h "$ARCHIVE" | awk '{print $1}'))"
 
 if [[ "$EXECUTE" -eq 0 ]]; then
@@ -199,7 +200,11 @@ if git show-ref --verify --quiet "refs/remotes/origin/$LOCAL_BRANCH"; then
 fi
 
 [[ -f "$ARCHIVE_NAME" ]] || { error "uploaded archive is missing: $ARCHIVE_NAME"; exit 1; }
-tar -xzf "$ARCHIVE_NAME"
+if tar --warning=no-unknown-keyword -cf /dev/null --files-from /dev/null >/dev/null 2>&1; then
+  tar --warning=no-unknown-keyword -xzf "$ARCHIVE_NAME"
+else
+  tar -xzf "$ARCHIVE_NAME"
+fi
 rm -f "$ARCHIVE_NAME"
 
 deleted_file="$(mktemp)"
