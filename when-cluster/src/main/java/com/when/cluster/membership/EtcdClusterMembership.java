@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -21,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import com.when.observability.Metrics;
+import com.when.observability.WhenMetrics;
 
 /** ETCD-backed node registration, lease heartbeat, member watch and Controller election. */
 public final class EtcdClusterMembership implements ClusterMembership {
@@ -38,6 +41,7 @@ public final class EtcdClusterMembership implements ClusterMembership {
     private final ScheduledExecutorService electionExecutor;
     private final Object lifecycleLock = new Object();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final Metrics metrics;
 
     private volatile NodeInfo self;
     private volatile int workerId = -1;
@@ -49,13 +53,21 @@ public final class EtcdClusterMembership implements ClusterMembership {
     private volatile EtcdMetadataClient.WatchHandle controllerWatch;
 
     public EtcdClusterMembership(EtcdMetadataClient client) {
-        this(client, DEFAULT_LEASE_TTL_SECONDS, DEFAULT_HEARTBEAT_INTERVAL);
+        this(client, DEFAULT_LEASE_TTL_SECONDS, DEFAULT_HEARTBEAT_INTERVAL, Metrics.noop());
     }
 
     public EtcdClusterMembership(
             EtcdMetadataClient client,
             long leaseTtlSeconds,
             Duration heartbeatInterval) {
+        this(client, leaseTtlSeconds, heartbeatInterval, Metrics.noop());
+    }
+
+    public EtcdClusterMembership(
+            EtcdMetadataClient client,
+            long leaseTtlSeconds,
+            Duration heartbeatInterval,
+            Metrics metrics) {
         this.client = Objects.requireNonNull(client, "client");
         if (leaseTtlSeconds <= 0) {
             throw new IllegalArgumentException("leaseTtlSeconds must be positive");
@@ -66,6 +78,7 @@ public final class EtcdClusterMembership implements ClusterMembership {
             throw new IllegalArgumentException("heartbeatInterval must be positive and below lease TTL");
         }
         this.leaseTtlSeconds = leaseTtlSeconds;
+        this.metrics = Objects.requireNonNull(metrics, "metrics");
         this.clusterCodec = new ClusterMetadataCodec();
         this.metadataCodec = new MetadataJsonCodec();
         this.heartbeatExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -139,7 +152,8 @@ public final class EtcdClusterMembership implements ClusterMembership {
         requireRegistered();
         synchronized (lifecycleLock) {
             if (controllerWatch == null) {
-                controllerWatch = client.watch(EtcdKeys.CONTROLLER, this::onControllerEvent);
+                controllerWatch = client.watchKey(
+                        EtcdKeys.CONTROLLER, 0, this::onControllerEvent, ignored -> { });
             }
         }
         return attemptControllerClaim();
@@ -179,6 +193,13 @@ public final class EtcdClusterMembership implements ClusterMembership {
     @Override
     public Optional<String> currentController() {
         return client.get(EtcdKeys.CONTROLLER);
+    }
+
+    @Override
+    public OptionalLong currentControllerTerm() {
+        return client.getValue(EtcdKeys.CONTROLLER)
+                .map(value -> OptionalLong.of(value.modRevision()))
+                .orElseGet(OptionalLong::empty);
     }
 
     public boolean isController() {
@@ -226,6 +247,7 @@ public final class EtcdClusterMembership implements ClusterMembership {
         long currentLease = leaseId;
         if (currentSelf == null || currentLease == 0 || closed.get()) {
             controller = false;
+            metrics.incr(WhenMetrics.CONTROLLER_ELECTIONS, "result", "ineligible");
             return false;
         }
         boolean owns = false;
@@ -244,6 +266,9 @@ public final class EtcdClusterMembership implements ClusterMembership {
         if (owns) {
             controllerSnapshot = loadControllerSnapshot();
         }
+        metrics.incr(
+                WhenMetrics.CONTROLLER_ELECTIONS,
+                "result", owns ? "won" : "lost");
         return owns;
     }
 

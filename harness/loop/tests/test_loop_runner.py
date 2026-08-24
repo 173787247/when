@@ -223,6 +223,31 @@ class LoopRunnerTests(unittest.TestCase):
             with self.assertRaises(runner.LoopError):
                 instance.require_phase_prerequisite()
 
+    def test_second_phase_accepts_auditable_legacy_first_phase_migration(self):
+        config = runner.read_json(ROOT / 'loop.yaml')
+        instance = object.__new__(runner.Runner)
+        instance.config = config
+        instance.phase = 'second'
+        instance.state = {
+            'phases': {'first': {'status': 'COMPLETE'}, 'second': {'status': 'PENDING'}},
+            'stages': {
+                f'lesson{lesson}': {
+                    'status': 'PASSED',
+                    'lesson_commit': f'lesson-{lesson}',
+                    'merge_commit': f'merge-{lesson}',
+                }
+                for lesson in range(39, 46)
+            },
+        }
+        with (
+            mock.patch.object(instance, 'valid_pass', return_value=False),
+            mock.patch.object(runner, 'git', return_value=mock.Mock(returncode=0)),
+            mock.patch.object(runner, 'save') as save,
+        ):
+            instance.require_phase_prerequisite()
+        self.assertIn('phase-aware Runner migration', instance.state['phases']['first']['fingerprint_migration'])
+        save.assert_called_once_with(instance.state)
+
     def test_unfinished_other_phase_blocks_run(self):
         config = runner.read_json(ROOT / 'loop.yaml')
         instance = object.__new__(runner.Runner)

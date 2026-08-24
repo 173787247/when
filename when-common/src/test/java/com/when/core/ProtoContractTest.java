@@ -30,6 +30,7 @@ class ProtoContractTest {
         assertEquals(0, com.when.common.proto.SinkType.SINK_TYPE_UNSPECIFIED.getNumber());
         assertEquals(1, com.when.common.proto.SinkType.HTTP.getNumber());
         assertEquals(2, com.when.common.proto.SinkType.KAFKA.getNumber());
+        assertEquals(3, com.when.common.proto.SinkType.FILE.getNumber());
         assertEquals(1, com.when.common.proto.MessageStatus.PENDING.getNumber());
         assertEquals(5, com.when.common.proto.MessageStatus.CANCELLED.getNumber());
     }
