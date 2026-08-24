@@ -8,6 +8,7 @@ public final class EtcdKeys {
     public static final String NODES_PREFIX = "/when/nodes/";
     public static final String WORKERS_PREFIX = "/when/workers/";
     public static final String CONTROLLER = "/when/controller";
+    public static final String CONTROLLER_PROGRESS = "/when/controller/progress";
     public static final String TIME_WHEELS_PREFIX = "/when/timewheels/";
     public static final String CONFIG_PREFIX = "/when/config/";
 

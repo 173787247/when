@@ -101,6 +101,15 @@ public final class EtcdMetadataClient implements AutoCloseable {
         return Optional.of(text(response.getKvs().get(0).getValue()));
     }
 
+    public Optional<EtcdValue> getValue(String key) {
+        var response = await(kv.get(bytes(required(key, "key"))), "get value");
+        if (response.getKvs().isEmpty()) {
+            return Optional.empty();
+        }
+        KeyValue value = response.getKvs().get(0);
+        return Optional.of(etcdValue(value));
+    }
+
     public Map<String, String> getPrefix(String prefix) {
         GetOption option = GetOption.builder().isPrefix(true).build();
         var response = await(kv.get(bytes(required(prefix, "prefix")), option), "get prefix");
@@ -111,15 +120,63 @@ public final class EtcdMetadataClient implements AutoCloseable {
         return Map.copyOf(result);
     }
 
+    /** Reads a whole prefix in one linearizable request and preserves its header revision. */
+    public EtcdSnapshot getPrefixSnapshot(String prefix) {
+        GetOption option = GetOption.builder().isPrefix(true).build();
+        var response = await(
+                kv.get(bytes(required(prefix, "prefix")), option),
+                "get prefix snapshot");
+        Map<String, EtcdValue> result = new LinkedHashMap<>();
+        for (KeyValue keyValue : response.getKvs()) {
+            result.put(text(keyValue.getKey()), etcdValue(keyValue));
+        }
+        return new EtcdSnapshot(response.getHeader().getRevision(), result);
+    }
+
     public boolean delete(String key) {
         return await(kv.delete(bytes(required(key, "key"))), "delete").getDeleted() > 0;
     }
 
     public WatchHandle watch(String prefix, Consumer<EtcdWatchEvent> handler) {
-        required(prefix, "prefix");
+        return watchPrefix(prefix, 0, handler, ignored -> { });
+    }
+
+    public WatchHandle watchPrefix(
+            String prefix,
+            long startRevision,
+            Consumer<EtcdWatchEvent> handler,
+            Consumer<Throwable> errorHandler) {
+        return watchInternal(prefix, true, startRevision, handler, errorHandler);
+    }
+
+    public WatchHandle watchKey(
+            String key,
+            long startRevision,
+            Consumer<EtcdWatchEvent> handler,
+            Consumer<Throwable> errorHandler) {
+        return watchInternal(key, false, startRevision, handler, errorHandler);
+    }
+
+    private WatchHandle watchInternal(
+            String key,
+            boolean prefix,
+            long startRevision,
+            Consumer<EtcdWatchEvent> handler,
+            Consumer<Throwable> errorHandler) {
+        required(key, "key");
+        if (startRevision < 0) {
+            throw new IllegalArgumentException("startRevision must not be negative");
+        }
         Objects.requireNonNull(handler, "handler");
-        WatchOption option = WatchOption.builder().isPrefix(true).build();
-        Watch.Watcher watcher = watch.watch(bytes(prefix), option, Watch.listener(response -> {
+        Objects.requireNonNull(errorHandler, "errorHandler");
+        WatchOption.Builder options = WatchOption.builder();
+        if (prefix) {
+            options.isPrefix(true);
+        }
+        if (startRevision > 0) {
+            options.withRevision(startRevision);
+        }
+        Watch.Watcher watcher = watch.watch(bytes(key), options.build(), Watch.listener(response -> {
             for (WatchEvent event : response.getEvents()) {
                 EtcdWatchEvent.Type type = event.getEventType() == WatchEvent.EventType.DELETE
                         ? EtcdWatchEvent.Type.DELETE
@@ -131,7 +188,7 @@ public final class EtcdMetadataClient implements AutoCloseable {
                         text(keyValue.getValue()),
                         keyValue.getModRevision()));
             }
-        }));
+        }, errorHandler));
         return watcher::close;
     }
 
@@ -191,6 +248,86 @@ public final class EtcdMetadataClient implements AutoCloseable {
                                 PutOption.DEFAULT))
                         .commit(),
                 "transactional compare and put").isSucceeded();
+    }
+
+    /**
+     * Commits a Controller decision only while the elected Controller term and target record are
+     * still exactly the values observed by the decision maker. The progress update is part of the
+     * same transaction, so a successor can resume without an in-memory handoff.
+     */
+    public EtcdTxnResult txnControllerAssignment(
+            String controllerNodeId,
+            long controllerTerm,
+            String targetKey,
+            long expectedModRevision,
+            String expectedValue,
+            String replacementValue,
+            String progressValue) {
+        required(controllerNodeId, "controllerNodeId");
+        required(targetKey, "targetKey");
+        required(replacementValue, "replacementValue");
+        required(progressValue, "progressValue");
+        if (controllerTerm <= 0) {
+            throw new IllegalArgumentException("controllerTerm must be positive");
+        }
+        if (expectedModRevision < 0) {
+            throw new IllegalArgumentException("expectedModRevision must not be negative");
+        }
+        ByteSequence controllerKey = bytes(EtcdKeys.CONTROLLER);
+        ByteSequence assignmentKey = bytes(targetKey);
+        var transaction = kv.txn().If(
+                new Cmp(controllerKey, Cmp.Op.EQUAL, CmpTarget.modRevision(controllerTerm)),
+                new Cmp(controllerKey, Cmp.Op.EQUAL, CmpTarget.value(bytes(controllerNodeId))));
+        if (expectedModRevision == 0) {
+            transaction.If(new Cmp(assignmentKey, Cmp.Op.EQUAL, CmpTarget.version(0)));
+        } else {
+            transaction.If(
+                    new Cmp(
+                            assignmentKey,
+                            Cmp.Op.EQUAL,
+                            CmpTarget.modRevision(expectedModRevision)),
+                    new Cmp(
+                            assignmentKey,
+                            Cmp.Op.EQUAL,
+                            CmpTarget.value(bytes(required(expectedValue, "expectedValue")))));
+        }
+        var response = await(transaction.Then(
+                        Op.put(assignmentKey, bytes(replacementValue), PutOption.DEFAULT),
+                        Op.put(
+                                bytes(EtcdKeys.CONTROLLER_PROGRESS),
+                                bytes(progressValue),
+                                PutOption.DEFAULT))
+                .commit(), "transactional Controller assignment");
+        return new EtcdTxnResult(response.isSucceeded(), response.getHeader().getRevision());
+    }
+
+    /** Writes replay progress only while the caller still owns the exact election term. */
+    public boolean txnControllerProgress(
+            String controllerNodeId,
+            long controllerTerm,
+            String progressValue) {
+        required(controllerNodeId, "controllerNodeId");
+        required(progressValue, "progressValue");
+        if (controllerTerm <= 0) {
+            throw new IllegalArgumentException("controllerTerm must be positive");
+        }
+        ByteSequence controllerKey = bytes(EtcdKeys.CONTROLLER);
+        return await(kv.txn()
+                        .If(
+                                new Cmp(
+                                        controllerKey,
+                                        Cmp.Op.EQUAL,
+                                        CmpTarget.modRevision(controllerTerm)),
+                                new Cmp(
+                                        controllerKey,
+                                        Cmp.Op.EQUAL,
+                                        CmpTarget.value(bytes(controllerNodeId))))
+                        .Then(Op.put(
+                                bytes(EtcdKeys.CONTROLLER_PROGRESS),
+                                bytes(progressValue),
+                                PutOption.DEFAULT))
+                        .commit(),
+                "transactional Controller progress").isSucceeded();
     }
 
     public boolean txnRegisterNodeAndWorker(
@@ -273,6 +410,11 @@ public final class EtcdMetadataClient implements AutoCloseable {
 
     private static String text(ByteSequence value) {
         return value == null || value.equals(EMPTY) ? "" : value.toString(StandardCharsets.UTF_8);
+    }
+
+    private static EtcdValue etcdValue(KeyValue value) {
+        return new EtcdValue(
+                text(value.getValue()), value.getCreateRevision(), value.getModRevision());
     }
 
     private static String required(String value, String name) {

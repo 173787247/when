@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -139,7 +140,8 @@ public final class EtcdClusterMembership implements ClusterMembership {
         requireRegistered();
         synchronized (lifecycleLock) {
             if (controllerWatch == null) {
-                controllerWatch = client.watch(EtcdKeys.CONTROLLER, this::onControllerEvent);
+                controllerWatch = client.watchKey(
+                        EtcdKeys.CONTROLLER, 0, this::onControllerEvent, ignored -> { });
             }
         }
         return attemptControllerClaim();
@@ -179,6 +181,13 @@ public final class EtcdClusterMembership implements ClusterMembership {
     @Override
     public Optional<String> currentController() {
         return client.get(EtcdKeys.CONTROLLER);
+    }
+
+    @Override
+    public OptionalLong currentControllerTerm() {
+        return client.getValue(EtcdKeys.CONTROLLER)
+                .map(value -> OptionalLong.of(value.modRevision()))
+                .orElseGet(OptionalLong::empty);
     }
 
     public boolean isController() {
