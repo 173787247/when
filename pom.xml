@@ -17,6 +17,7 @@
         <module>when-api</module>
         <module>when-storage-redis</module>
         <module>when-cluster</module>
+        <module>when-timewheel</module>
     </modules>
 
     <properties>
@@ -27,12 +28,18 @@
         <jackson.version>2.19.1</jackson.version>
         <jedis.version>5.0.0</jedis.version>
         <jetcd.version>0.7.7</jetcd.version>
+        <netty.version>4.1.122.Final</netty.version>
         <maven.compiler.version>3.13.0</maven.compiler.version>
         <maven.surefire.version>3.5.0</maven.surefire.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-common</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>
