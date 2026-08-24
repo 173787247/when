@@ -23,8 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import com.when.observability.Metrics;
-import com.when.observability.WhenMetrics;
 
 /**
  * Per-time-wheel bounded asynchronous replication pipeline.
@@ -52,7 +50,6 @@ public final class DefaultReplicaSync implements ReplicaSync, AutoCloseable {
     private final AtomicLong outOfSyncCount = new AtomicLong();
     private final AtomicLong rebuildCount = new AtomicLong();
     private final AtomicLong lastRebuildDurationMillis = new AtomicLong();
-    private final Metrics metrics;
 
     public DefaultReplicaSync(
             String localNodeId,
@@ -66,8 +63,7 @@ public final class DefaultReplicaSync implements ReplicaSync, AutoCloseable {
                 applier,
                 DEFAULT_QUEUE_CAPACITY,
                 DEFAULT_MAX_ATTEMPTS,
-                Duration.ofSeconds(2),
-                Metrics.noop());
+                Duration.ofSeconds(2));
     }
 
     public DefaultReplicaSync(
@@ -78,26 +74,6 @@ public final class DefaultReplicaSync implements ReplicaSync, AutoCloseable {
             int queueCapacity,
             int maxAttempts,
             Duration attemptTimeout) {
-        this(
-                localNodeId,
-                assignments,
-                transport,
-                applier,
-                queueCapacity,
-                maxAttempts,
-                attemptTimeout,
-                Metrics.noop());
-    }
-
-    public DefaultReplicaSync(
-            String localNodeId,
-            ReplicaAssignmentStore assignments,
-            ReplicaTransport transport,
-            ReplicaOperationApplier applier,
-            int queueCapacity,
-            int maxAttempts,
-            Duration attemptTimeout,
-            Metrics metrics) {
         this.localNodeId = requireText(localNodeId, "localNodeId");
         this.assignments = Objects.requireNonNull(assignments, "assignments");
         this.transport = Objects.requireNonNull(transport, "transport");
@@ -108,7 +84,6 @@ public final class DefaultReplicaSync implements ReplicaSync, AutoCloseable {
         this.queueCapacity = queueCapacity;
         this.maxAttempts = maxAttempts;
         this.attemptTimeout = Objects.requireNonNull(attemptTimeout, "attemptTimeout");
-        this.metrics = Objects.requireNonNull(metrics, "metrics");
         if (attemptTimeout.isZero() || attemptTimeout.isNegative()) {
             throw new IllegalArgumentException("attemptTimeout must be positive");
         }
@@ -117,10 +92,6 @@ public final class DefaultReplicaSync implements ReplicaSync, AutoCloseable {
             thread.setDaemon(true);
             return thread;
         });
-        this.metrics.gauge(
-                WhenMetrics.REPLICA_SYNC_QUEUE_SIZE,
-                () -> channels.values().stream().mapToInt(channel -> channel.queue.size()).sum(),
-                "node_id", localNodeId);
     }
 
     @Override
@@ -243,9 +214,6 @@ public final class DefaultReplicaSync implements ReplicaSync, AutoCloseable {
                     if (failure != null && channel != null) {
                         markLocalOutOfSync(twId);
                     }
-                    metrics.incr(
-                            WhenMetrics.REPLICA_REBUILD,
-                            "result", failure == null ? "success" : "failure");
                 });
     }
 

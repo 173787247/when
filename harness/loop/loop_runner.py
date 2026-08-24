@@ -315,21 +315,9 @@ def repo_dirty() -> list[str]:
         if not entry:
             continue
         path = entry[3:]
-        if path.startswith('.loop/'):
-            continue
-        # Git collapses an untracked directory into one `?? directory/`
-        # entry.  Boundary checks need its real file paths so a permitted
-        # `.github/workflows/ci.yml` is not mistaken for all of `.github/`.
-        candidate = ROOT / path
-        if path.endswith('/') and candidate.is_dir():
-            paths.extend(
-                item.relative_to(ROOT).as_posix()
-                for item in candidate.rglob('*')
-                if item.is_file() and '.git' not in item.parts
-            )
-        else:
+        if not path.startswith('.loop/'):
             paths.append(path)
-    return sorted(set(paths))
+    return paths
 
 
 def checked_branch() -> str:
@@ -522,28 +510,11 @@ class Runner:
             raise LoopError('validate requires master, lesson/46, or the persisted active lesson branch', 4)
         dirty = repo_dirty()
         bootstrap_paths = ['AGENTS.md', 'loop', 'loop.yaml', '.gitignore', 'harness/']
-        if dirty:
-            if branch == 'lesson/46' and all(
-                any(path == prefix or path.startswith(prefix) for prefix in bootstrap_paths)
-                for path in dirty
-            ):
-                pass
-            elif resuming_stage_branch(branch, self.state, self.config):
-                active = self.stage(self.state['current_stage'])
-                allowed_protected = active.get('stage_protected_path_overrides', {}).get('allow_write', [])
-                invalid = [
-                    path for path in dirty
-                    if (
-                        matching(path, self.config['protected_paths'])
-                        and not matching(path, allowed_protected)
-                    ) or not matching(path, active['write_paths'])
-                ]
-                if invalid:
-                    raise LoopError(
-                        'active lesson recovery contains out-of-scope changes: ' + ', '.join(invalid), 4,
-                    )
-            else:
-                raise LoopError('working tree is not clean: ' + ', '.join(dirty), 4)
+        if dirty and not (
+            branch == 'lesson/46'
+            and all(any(path == prefix or path.startswith(prefix) for prefix in bootstrap_paths) for path in dirty)
+        ):
+            raise LoopError('working tree is not clean: ' + ', '.join(dirty), 4)
         for program in ('git', 'python3', 'codex', 'java', 'redis-server', 'etcd'):
             if not shutil.which(program):
                 raise LoopError(f'host executable not found: {program}', 7)
@@ -701,16 +672,6 @@ class Runner:
             self.lock_handle.close()
 
     def prepare_branch(self, stage: dict[str, Any]) -> None:
-        # Interrupted work resumes in-place on its recorded lesson branch.
-        # Do not require a clean tree here: validation already confirmed the
-        # dirty paths are scoped to this exact active lesson.
-        if (
-            checked_branch() == stage['branch']
-            and self.state.get('current_stage') == stage['id']
-            and self.state.get('current_branch') == stage['branch']
-            and self.state.get('status') == 'RUNNING'
-        ):
-            return
         if repo_dirty():
             raise LoopError('working tree contains external changes: ' + ', '.join(repo_dirty()), 4)
         git('switch', 'master')

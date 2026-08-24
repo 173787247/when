@@ -31,11 +31,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import com.when.observability.Metrics;
-import com.when.observability.TraceAttributes;
-import com.when.observability.TraceOperations;
-import com.when.observability.TraceSpanKind;
-import com.when.observability.WhenMetrics;
 
 /**
  * The cluster module's sole low-level etcd entry point.
@@ -51,37 +46,21 @@ public final class EtcdMetadataClient implements AutoCloseable {
     private final Lease lease;
     private final Watch watch;
     private final Duration timeout;
-    private final Metrics metrics;
-    private final TraceOperations traces;
 
     public EtcdMetadataClient(EtcdClientConfig config) {
-        this(buildClient(config), config.operationTimeout(), Metrics.noop(), TraceOperations.noop());
-    }
-
-    public EtcdMetadataClient(EtcdClientConfig config, Metrics metrics, TraceOperations traces) {
-        this(buildClient(config), config.operationTimeout(), metrics, traces);
+        this(buildClient(config), config.operationTimeout());
     }
 
     EtcdMetadataClient(Client client, Duration timeout) {
-        this(client, timeout, Metrics.noop(), TraceOperations.noop());
-    }
-
-    EtcdMetadataClient(Client client, Duration timeout, Metrics metrics, TraceOperations traces) {
         this.client = Objects.requireNonNull(client, "client");
         this.kv = client.getKVClient();
         this.lease = client.getLeaseClient();
         this.watch = client.getWatchClient();
         this.timeout = Objects.requireNonNull(timeout, "timeout");
-        this.metrics = Objects.requireNonNull(metrics, "metrics");
-        this.traces = Objects.requireNonNull(traces, "traces");
     }
 
     public static EtcdMetadataClient fromEnvironment() {
         return new EtcdMetadataClient(EtcdClientConfig.fromEnvironment());
-    }
-
-    public static EtcdMetadataClient fromEnvironment(Metrics metrics, TraceOperations traces) {
-        return new EtcdMetadataClient(EtcdClientConfig.fromEnvironment(), metrics, traces);
     }
 
     public void put(String key, String value) {
@@ -257,12 +236,6 @@ public final class EtcdMetadataClient implements AutoCloseable {
 
     /** Replaces a value only when it still equals the caller's observed value. */
     public boolean txnPutIfValue(String key, String expectedValue, String newValue) {
-        return txnPutIfValue(key, expectedValue, newValue, 0);
-    }
-
-    /** Replaces a value under CAS while preserving the caller-owned retention lease. */
-    public boolean txnPutIfValue(
-            String key, String expectedValue, String newValue, long leaseId) {
         ByteSequence encodedKey = bytes(required(key, "key"));
         return await(kv.txn()
                         .If(new Cmp(
@@ -272,7 +245,7 @@ public final class EtcdMetadataClient implements AutoCloseable {
                         .Then(Op.put(
                                 encodedKey,
                                 bytes(required(newValue, "newValue")),
-                                putOption(leaseId)))
+                                PutOption.DEFAULT))
                         .commit(),
                 "transactional compare and put").isSucceeded();
     }
@@ -391,16 +364,6 @@ public final class EtcdMetadataClient implements AutoCloseable {
         client.close();
     }
 
-    /** Bounded linearizable dependency probe for readiness. */
-    public boolean healthCheck() {
-        try {
-            get(EtcdKeys.CONTROLLER);
-            return true;
-        } catch (RuntimeException failure) {
-            return false;
-        }
-    }
-
     private static Client buildClient(EtcdClientConfig config) {
         Objects.requireNonNull(config, "config");
         ClientBuilder builder = Client.builder().endpoints(config.endpoints());
@@ -431,34 +394,6 @@ public final class EtcdMetadataClient implements AutoCloseable {
     }
 
     private <T> T await(CompletableFuture<T> future, String operation) {
-        String metricOperation = operation.toLowerCase(java.util.Locale.ROOT).replace(' ', '_');
-        long started = System.nanoTime();
-        try {
-            T result = traces.inSpan(
-                    "when.metadata",
-                    TraceSpanKind.CLIENT,
-                    TraceAttributes.of("db.system", "etcd", "db.operation.name", metricOperation),
-                    () -> awaitFuture(future, operation));
-            metrics.incr(
-                    WhenMetrics.ETCD_OPERATIONS,
-                    "operation", metricOperation,
-                    "status", "success");
-            return result;
-        } catch (RuntimeException failure) {
-            metrics.incr(
-                    WhenMetrics.ETCD_OPERATIONS,
-                    "operation", metricOperation,
-                    "status", "failure");
-            throw failure;
-        } finally {
-            metrics.observe(
-                    WhenMetrics.ETCD_OPERATION_DURATION,
-                    Math.max(0d, (System.nanoTime() - started) / 1_000_000_000d),
-                    "operation", metricOperation);
-        }
-    }
-
-    private <T> T awaitFuture(CompletableFuture<T> future, String operation) {
         try {
             return future.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {

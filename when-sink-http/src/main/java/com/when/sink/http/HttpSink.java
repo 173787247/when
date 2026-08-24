@@ -7,7 +7,6 @@ import com.when.core.Message;
 import com.when.core.SinkConfig;
 import com.when.core.SinkType;
 import com.when.sink.spi.AttemptAwareSink;
-import com.when.observability.TraceOperations;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -29,30 +28,19 @@ public final class HttpSink implements AttemptAwareSink {
     private static final int DEFAULT_TIMEOUT_MS = 5_000;
     private static final Pattern METHOD = Pattern.compile("[A-Z][A-Z0-9_-]{0,31}");
     private static final Set<String> RESERVED_HEADERS = Set.of(
-            "x-when-message-id", "x-when-attempt-id", "x-when-trace-id", "traceparent",
-            "tracestate", "content-length", "host");
+            "x-when-message-id", "x-when-attempt-id", "x-when-trace-id", "content-length", "host");
 
     private final HttpClient client;
     private final HttpTargetPolicy targetPolicy;
-    private final TraceOperations traces;
 
     /** Java-SPI constructor using production-safe environment settings. */
     public HttpSink() {
-        this(newClient(), HttpTargetPolicy.fromEnvironment(), TraceOperations.noop());
-    }
-
-    public HttpSink(TraceOperations traces) {
-        this(newClient(), HttpTargetPolicy.fromEnvironment(), traces);
+        this(newClient(), HttpTargetPolicy.fromEnvironment());
     }
 
     public HttpSink(HttpClient client, HttpTargetPolicy targetPolicy) {
-        this(client, targetPolicy, TraceOperations.noop());
-    }
-
-    public HttpSink(HttpClient client, HttpTargetPolicy targetPolicy, TraceOperations traces) {
         this.client = Objects.requireNonNull(client, "client");
         this.targetPolicy = Objects.requireNonNull(targetPolicy, "targetPolicy");
-        this.traces = Objects.requireNonNull(traces, "traces");
     }
 
     @Override
@@ -96,7 +84,6 @@ public final class HttpSink implements AttemptAwareSink {
                     .header("X-When-Attempt-Id", requireText(attemptId, "attemptId"))
                     .header("X-When-Trace-Id", safeTrace(message.traceId()));
             config.headers().forEach(builder::header);
-            traces.injectCurrentContext().forEach(builder::header);
 
             HttpResponse<InputStream> response = client.send(
                     builder.build(), HttpResponse.BodyHandlers.ofInputStream());

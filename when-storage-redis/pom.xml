@@ -21,17 +21,7 @@
         </dependency>
         <dependency>
             <groupId>com.when</groupId>
-            <artifactId>when-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.when</groupId>
             <artifactId>when-delivery</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.when</groupId>
-            <artifactId>when-observability</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

@@ -5,7 +5,6 @@ import com.when.api.application.SubmitCommand;
 import com.when.api.grpc.SubmitRequest;
 import com.when.core.HttpSinkConfig;
 import com.when.core.KafkaSinkConfig;
-import com.when.core.FileSinkConfig;
 import com.when.core.MessageStatus;
 import com.when.core.SinkType;
 
@@ -27,9 +26,6 @@ final class GrpcMessageMapper {
                     .setTopic(kafka.topic())
                     .setKey(nullToEmpty(kafka.key()))
                     .putAllHeaders(kafka.headers()));
-        } else if (command.sinkConfig() instanceof FileSinkConfig file) {
-            sinkConfig.setFile(com.when.common.proto.FileSinkConfig.newBuilder()
-                    .setPath(file.path()));
         } else {
             throw new IllegalArgumentException("unsupported sink configuration");
         }
@@ -58,7 +54,6 @@ final class GrpcMessageMapper {
         return switch (type) {
             case HTTP -> com.when.common.proto.SinkType.HTTP;
             case KAFKA -> com.when.common.proto.SinkType.KAFKA;
-            case FILE -> com.when.common.proto.SinkType.FILE;
         };
     }
 

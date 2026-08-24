@@ -22,11 +22,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.when</groupId>
-            <artifactId>when-observability</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
