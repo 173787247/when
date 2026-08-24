@@ -1,5 +1,14 @@
 package com.when.app;
 
+import com.when.admin.api.AdminQueryService;
+import com.when.api.http.AdminIndexWriter;
+import com.when.api.application.DelayMessageHandler;
+import com.when.cluster.controller.DefaultController;
+import com.when.cluster.controller.DefaultRebalancePlanner;
+import com.when.cluster.controller.EtcdAssignmentStore;
+import com.when.cluster.controller.EtcdTimeWheelAdminService;
+import com.when.cluster.controller.RebalancePolicy;
+import com.when.cluster.controller.ControllerTerm;
 import com.when.cluster.etcd.EtcdMetadataClient;
 import com.when.cluster.membership.EtcdClusterMembership;
 import com.when.cluster.membership.NodeInfo;
@@ -18,6 +27,7 @@ import com.when.plugin.storage.redis.RedisStorageConfig;
 import com.when.plugin.storage.redis.RedisDeliveryStateStore;
 import com.when.plugin.storage.redis.RedisStoragePlugin;
 import com.when.plugin.storage.redis.RedisTraceContextStore;
+import com.when.plugin.storage.redis.RedisAdminQueryStore;
 import com.when.observability.DependencyHealthMonitor;
 import com.when.observability.LogEvent;
 import com.when.observability.ManagementConfig;
@@ -40,6 +50,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import org.springframework.boot.Banner;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /** Executable single-node composition root used by the local integration harness. */
@@ -71,6 +86,7 @@ public final class WhenServer {
         RedisTraceContextStore traceContexts = new RedisTraceContextStore(redisConfig);
         RedisDeliveryStateStore deliveryState =
                 new RedisDeliveryStateStore(redisConfig);
+        RedisAdminQueryStore adminIndex = new RedisAdminQueryStore(redisConfig, rawStorage);
         EtcdMetadataClient metadataClient = EtcdMetadataClient.fromEnvironment(metrics, traces);
         EtcdClusterMembership membership = new EtcdClusterMembership(
                 metadataClient,
@@ -127,6 +143,22 @@ public final class WhenServer {
                 traces,
                 traceContexts,
                 new StructuredEventLogger(DefaultDelayMessageHandler.class, "when", config.nodeId()));
+
+        EtcdAssignmentStore assignmentStore = new EtcdAssignmentStore(config.nodeId(), metadataClient);
+        DefaultController controller = new DefaultController(
+                assignmentStore,
+                new DefaultRebalancePlanner(),
+                RebalancePolicy.defaults(),
+                (decision, assignment) -> CompletableFuture.completedFuture(null));
+        EtcdTimeWheelAdminService timeWheelAdmin =
+                new EtcdTimeWheelAdminService(controller, metadataClient);
+        AdminQueryService adminQueries = new AdminQueryService(
+                handler, adminIndex, deliveryState, timeWheelAdmin, membership);
+        AtomicReference<ConfigurableApplicationContext> httpApplication = new AtomicReference<>();
+        AutoCloseable httpResource = () -> {
+            ConfigurableApplicationContext context = httpApplication.getAndSet(null);
+            if (context != null) context.close();
+        };
         WhenNode node = new WhenNode(
                 config.grpcPort(),
                 handler,
@@ -143,7 +175,10 @@ public final class WhenServer {
                         deliveryState,
                         sinks,
                         recoveryWorker,
-                        healthMonitor),
+                        healthMonitor,
+                        controller,
+                        adminIndex,
+                        httpResource),
                 traces);
 
         Runtime.getRuntime().addShutdownHook(new Thread(node::close, "when-server-shutdown"));
@@ -152,10 +187,27 @@ public final class WhenServer {
                     new NodeInfo(config.nodeId(), host, config.grpcPort(), System.currentTimeMillis(), 0),
                     config.workerId());
             readiness.registered(true);
+            if (membership.tryBecomeController()) {
+                long term = membership.currentControllerTerm().orElseThrow();
+                controller.onControllerElected(new ControllerTerm(config.nodeId(), term));
+            }
             node.start();
             readiness.rolesRecovered(true);
             readiness.initialized(true);
             recoveryWorker.start();
+            httpApplication.set(new SpringApplicationBuilder(WhenHttpApplication.class)
+                    .bannerMode(Banner.Mode.OFF)
+                    .properties(
+                            "server.port=" + config.httpPort(),
+                            "spring.jackson.deserialization.fail-on-unknown-properties=true")
+                    .initializers(context -> {
+                        context.getBeanFactory().registerSingleton(
+                                "delayMessageHandler", (DelayMessageHandler) handler);
+                        context.getBeanFactory().registerSingleton(
+                                "adminIndexWriter", (AdminIndexWriter) adminIndex);
+                        context.getBeanFactory().registerSingleton("adminQueryService", adminQueries);
+                    })
+                    .run());
             events.info(
                     LogEvent.SERVER_LIFECYCLE,
                     "When node is ready",

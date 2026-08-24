@@ -30,7 +30,7 @@ class BusinessHttpControllerTest {
                 handler, (id, deliverAt) -> indexed.set(id + ":" + deliverAt), fixedClock());
         SubmitMessageRequest request = new SubmitMessageRequest(
                 null, 5L, SinkType.HTTP,
-                new SinkConfig(new HttpSinkConfig("https://example.test/callback", null, Map.of(), null), null, null),
+                new SinkConfig(new HttpSinkConfig("https://example.test/callback", null, Map.of(), null), null),
                 Base64.getEncoder().encodeToString("safe".getBytes()), "orders");
 
         var response = controller.submitMessage(null, request);
@@ -49,32 +49,12 @@ class BusinessHttpControllerTest {
         BusinessHttpController controller = new BusinessHttpController(new StubHandler(), AdminIndexWriter.noop(), fixedClock());
         assertThrows(IllegalArgumentException.class, () -> controller.submitMessage(null,
                 new SubmitMessageRequest(NOW + 5_000, 5L, SinkType.HTTP,
-                        new SinkConfig(new HttpSinkConfig("https://example.test", "POST", Map.of(), 1000), null, null),
+                        new SinkConfig(new HttpSinkConfig("https://example.test", "POST", Map.of(), 1000), null),
                         null, null)));
         assertThrows(IllegalArgumentException.class, () -> controller.submitMessage(null,
                 new SubmitMessageRequest(null, 5L, SinkType.HTTP,
-                        new SinkConfig(null, new KafkaSinkConfig("broker:9092", "topic", null, Map.of()), null),
+                        new SinkConfig(null, new KafkaSinkConfig("broker:9092", "topic", null, Map.of())),
                         null, null)));
-    }
-
-    @Test
-    void submitMapsFileSinkConfiguration() {
-        AtomicReference<SubmitCommand> captured = new AtomicReference<>();
-        DelayMessageHandler handler = new StubHandler() {
-            @Override public SubmitResult submit(SubmitCommand command) {
-                captured.set(command);
-                return new SubmitResult("msg-file", MessageStatus.PENDING, command.deliverAt());
-            }
-        };
-        BusinessHttpController controller = new BusinessHttpController(handler, AdminIndexWriter.noop(), fixedClock());
-
-        controller.submitMessage(null, new SubmitMessageRequest(
-                null, 5L, SinkType.FILE,
-                new SinkConfig(null, null, new FileSinkConfig("deliveries/message-1.bin")),
-                null, null));
-
-        assertEquals(com.when.core.SinkType.FILE, captured.get().sinkType());
-        assertEquals(new com.when.core.FileSinkConfig("deliveries/message-1.bin"), captured.get().sinkConfig());
     }
 
     @Test

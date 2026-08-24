@@ -257,6 +257,12 @@ public final class EtcdMetadataClient implements AutoCloseable {
 
     /** Replaces a value only when it still equals the caller's observed value. */
     public boolean txnPutIfValue(String key, String expectedValue, String newValue) {
+        return txnPutIfValue(key, expectedValue, newValue, 0);
+    }
+
+    /** Replaces a value under CAS while preserving the caller-owned retention lease. */
+    public boolean txnPutIfValue(
+            String key, String expectedValue, String newValue, long leaseId) {
         ByteSequence encodedKey = bytes(required(key, "key"));
         return await(kv.txn()
                         .If(new Cmp(
@@ -266,7 +272,7 @@ public final class EtcdMetadataClient implements AutoCloseable {
                         .Then(Op.put(
                                 encodedKey,
                                 bytes(required(newValue, "newValue")),
-                                PutOption.DEFAULT))
+                                putOption(leaseId)))
                         .commit(),
                 "transactional compare and put").isSucceeded();
     }

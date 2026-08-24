@@ -18,6 +18,16 @@
         </dependency>
         <dependency>
             <groupId>com.when</groupId>
+            <artifactId>when-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.when</groupId>
+            <artifactId>when-admin-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.when</groupId>
             <artifactId>when-observability</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -75,6 +85,11 @@
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
             <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>${spring-boot.version}</version>
         </dependency>
     </dependencies>
     <build>

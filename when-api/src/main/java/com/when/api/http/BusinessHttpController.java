@@ -5,7 +5,6 @@ import com.when.api.http.generated.BusinessApi;
 import com.when.api.http.generated.model.*;
 import com.when.core.HttpSinkConfig;
 import com.when.core.KafkaSinkConfig;
-import com.when.core.FileSinkConfig;
 import java.net.URI;
 import java.time.Clock;
 import java.util.Base64;
@@ -114,8 +113,7 @@ public final class BusinessHttpController implements BusinessApi {
 
     private static com.when.core.SinkConfig sinkConfig(SubmitMessageRequest request) {
         SinkConfig config = request.sinkConfig();
-        if (request.sinkType() == SinkType.HTTP
-                && config.http() != null && config.kafka() == null && config.file() == null) {
+        if (request.sinkType() == SinkType.HTTP && config.http() != null && config.kafka() == null) {
             URI.create(config.http().url());
             return new HttpSinkConfig(
                     config.http().url(),
@@ -123,17 +121,12 @@ public final class BusinessHttpController implements BusinessApi {
                     defaultMap(config.http().headers()),
                     config.http().timeoutMs() == null ? 5_000 : config.http().timeoutMs());
         }
-        if (request.sinkType() == SinkType.KAFKA
-                && config.kafka() != null && config.http() == null && config.file() == null) {
+        if (request.sinkType() == SinkType.KAFKA && config.kafka() != null && config.http() == null) {
             return new KafkaSinkConfig(
                     config.kafka().bootstrapServers(),
                     config.kafka().topic(),
                     config.kafka().key(),
                     defaultMap(config.kafka().headers()));
-        }
-        if (request.sinkType() == SinkType.FILE
-                && config.file() != null && config.http() == null && config.kafka() == null) {
-            return new FileSinkConfig(config.file().path());
         }
         throw new IllegalArgumentException("sink_type and sink_config must match");
     }
