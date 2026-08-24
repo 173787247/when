@@ -46,6 +46,11 @@ class LoopRunnerTests(unittest.TestCase):
         self.assertEqual(set(hashes), {'spec_hash','output_hash','judge_hash','protected_hash'})
         self.assertTrue(all(value.startswith('sha256:') for value in hashes.values()))
 
+    def test_shared_reactor_pom_is_not_a_stage_output_fingerprint(self):
+        config = runner.read_json(ROOT / 'loop.yaml')
+        for stage in config['stages']:
+            self.assertNotIn('pom.xml', stage['fingerprint_paths'])
+
     def test_fingerprint_ignores_python_runtime_bytecode(self):
         cache = ROOT / 'harness/contracts/__pycache__/fingerprint-test.pyc'
         cache.parent.mkdir(exist_ok=True)
