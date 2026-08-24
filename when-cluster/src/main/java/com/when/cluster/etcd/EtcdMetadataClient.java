@@ -177,6 +177,22 @@ public final class EtcdMetadataClient implements AutoCloseable {
                 "transactional put if absent").isSucceeded();
     }
 
+    /** Replaces a value only when it still equals the caller's observed value. */
+    public boolean txnPutIfValue(String key, String expectedValue, String newValue) {
+        ByteSequence encodedKey = bytes(required(key, "key"));
+        return await(kv.txn()
+                        .If(new Cmp(
+                                encodedKey,
+                                Cmp.Op.EQUAL,
+                                CmpTarget.value(bytes(required(expectedValue, "expectedValue")))))
+                        .Then(Op.put(
+                                encodedKey,
+                                bytes(required(newValue, "newValue")),
+                                PutOption.DEFAULT))
+                        .commit(),
+                "transactional compare and put").isSucceeded();
+    }
+
     public boolean txnRegisterNodeAndWorker(
             String nodeId,
             String nodeValue,

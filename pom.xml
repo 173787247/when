@@ -21,6 +21,7 @@
         <module>when-ingress-router</module>
         <module>when-test-support</module>
         <module>when-app</module>
+        <module>when-e2e-test</module>
         <module>when-acceptance</module>
     </modules>
 

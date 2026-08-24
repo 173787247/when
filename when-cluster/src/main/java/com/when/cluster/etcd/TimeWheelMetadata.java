@@ -1,6 +1,8 @@
 package com.when.cluster.etcd;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 /** Persistent Master/Slave placement stored below {@code /when/timewheels/}. */
 public record TimeWheelMetadata(
@@ -8,7 +10,7 @@ public record TimeWheelMetadata(
         String slave,
         String status,
         @JsonProperty("sync_state") String syncState,
-        long epoch) {
+        @JsonAlias("assignment_version") long epoch) {
 
     public TimeWheelMetadata(String master, String slave, String status) {
         this(master, slave, status, "in_sync", 0);
@@ -33,5 +35,15 @@ public record TimeWheelMetadata(
         if (epoch < 0) {
             throw new IllegalArgumentException("epoch must not be negative");
         }
+    }
+
+    /** Lesson 47 name for the fencing value; {@code epoch} remains the persisted field. */
+    @JsonIgnore
+    public long assignmentVersion() {
+        return epoch;
+    }
+
+    public TimeWheelMetadata withSyncState(String newSyncState) {
+        return new TimeWheelMetadata(master, slave, status, newSyncState, epoch);
     }
 }

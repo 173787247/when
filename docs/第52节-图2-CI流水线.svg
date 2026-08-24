@@ -1,41 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg viewBox="0 0 860 320" xmlns="http://www.w3.org/2000/svg">
-  <rect width="860" height="320" fill="#ffffff"/>
+<svg viewBox="0 0 940 330" xmlns="http://www.w3.org/2000/svg">
+  <rect width="940" height="330" fill="#ffffff"/>
   <defs>
-    <marker id="ci-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
-    <marker id="ci-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#22c55e"/></marker>
+    <marker id="ci-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="ci-ok" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#22c55e"/></marker>
   </defs>
-  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　CI 流水线：Loop 无法修改的外部自动化验收</text>
-
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　CI 复用 Make 目标，验证 When 的源码和三种制品</text>
   <g font-family="Arial, sans-serif">
-    <rect x="25" y="90" width="140" height="60" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
-    <text x="95" y="118" font-size="11.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">提 PR</text>
-    <text x="95" y="136" font-size="9.5" fill="#64748b" text-anchor="middle">循环交接后</text>
-
-    <rect x="205" y="90" width="140" height="60" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="275" y="114" font-size="11.5" font-weight="bold" fill="#b45309" text-anchor="middle">构建 + 单元/集成</text>
-    <text x="275" y="134" font-size="9.5" fill="#64748b" text-anchor="middle">protoc / mvn / 测试</text>
-
-    <rect x="385" y="90" width="150" height="60" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
-    <text x="460" y="114" font-size="11.5" font-weight="bold" fill="#b45309" text-anchor="middle">混沌 / 破坏性测试</text>
-    <text x="460" y="134" font-size="9.5" fill="#64748b" text-anchor="middle">杀节点/分区（47/48）</text>
-
-    <rect x="575" y="90" width="140" height="60" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="645" y="114" font-size="11.5" font-weight="bold" fill="#b45309" text-anchor="middle">安全 / lint 门禁</text>
-    <text x="645" y="134" font-size="9.5" fill="#64748b" text-anchor="middle">无硬编码密钥等</text>
-
-    <rect x="750" y="90" width="85" height="60" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2.2"/>
-    <text x="792" y="118" font-size="11.5" font-weight="bold" fill="#15803d" text-anchor="middle">全部通过</text>
-    <text x="792" y="136" font-size="9.5" fill="#64748b" text-anchor="middle">可合并</text>
+    <rect x="22" y="82" width="112" height="62" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="78" y="108" font-size="11.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">代码变更</text><text x="78" y="128" font-size="9.5" fill="#64748b" text-anchor="middle">PR / lesson 52</text>
+    <rect x="166" y="82" width="130" height="62" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="231" y="108" font-size="11.5" font-weight="bold" fill="#b45309" text-anchor="middle">make verify</text><text x="231" y="128" font-size="9.5" fill="#64748b" text-anchor="middle">构建 + 测试</text>
+    <rect x="328" y="82" width="130" height="62" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="393" y="108" font-size="11.5" font-weight="bold" fill="#b45309" text-anchor="middle">make release</text><text x="393" y="128" font-size="9.5" fill="#64748b" text-anchor="middle">TGZ + checksum + SBOM</text>
+    <rect x="490" y="82" width="130" height="62" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="555" y="108" font-size="11.5" font-weight="bold" fill="#b45309" text-anchor="middle">make image</text><text x="555" y="128" font-size="9.5" fill="#64748b" text-anchor="middle">只含 When</text>
+    <rect x="652" y="82" width="142" height="62" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="723" y="108" font-size="11.5" font-weight="bold" fill="#b45309" text-anchor="middle">k8s-validate</text><text x="723" y="128" font-size="9.5" fill="#64748b" text-anchor="middle">只含 When 资源</text>
+    <rect x="826" y="82" width="92" height="62" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2.2"/>
+    <text x="872" y="108" font-size="11.5" font-weight="bold" fill="#15803d" text-anchor="middle">可发布</text><text x="872" y="128" font-size="9.5" fill="#64748b" text-anchor="middle">全部通过</text>
   </g>
-
-  <line x1="165" y1="120" x2="203" y2="120" stroke="#f59e0b" stroke-width="2" marker-end="url(#ci-amber)"/>
-  <line x1="345" y1="120" x2="383" y2="120" stroke="#f59e0b" stroke-width="2" marker-end="url(#ci-amber)"/>
-  <line x1="535" y1="120" x2="573" y2="120" stroke="#f59e0b" stroke-width="2" marker-end="url(#ci-amber)"/>
-  <line x1="715" y1="120" x2="748" y2="120" stroke="#22c55e" stroke-width="2.2" marker-end="url(#ci-green)"/>
-
-  <rect x="25" y="200" width="810" height="90" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
-  <text x="43" y="224" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#334155">CI 是外部自动化验收（呼应第 38 节）</text>
-  <text x="43" y="248" font-family="Arial, sans-serif" font-size="11" fill="#334155">Loop 本地执行快速测试；慢速和破坏性测试由 CI 执行，Loop 无权修改 CI 验收。</text>
-  <text x="43" y="270" font-family="Arial, sans-serif" font-size="11" fill="#334155">任一必需检查失败都禁止合并；全部通过后才能进入主分支。</text>
+  <line x1="134" y1="113" x2="164" y2="113" stroke="#f59e0b" stroke-width="2" marker-end="url(#ci-arrow)"/>
+  <line x1="296" y1="113" x2="326" y2="113" stroke="#f59e0b" stroke-width="2" marker-end="url(#ci-arrow)"/>
+  <line x1="458" y1="113" x2="488" y2="113" stroke="#f59e0b" stroke-width="2" marker-end="url(#ci-arrow)"/>
+  <line x1="620" y1="113" x2="650" y2="113" stroke="#f59e0b" stroke-width="2" marker-end="url(#ci-arrow)"/>
+  <line x1="794" y1="113" x2="824" y2="113" stroke="#22c55e" stroke-width="2.2" marker-end="url(#ci-ok)"/>
+  <rect x="42" y="196" width="856" height="96" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="62" y="222" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#334155">制品边界也是验收项</text>
+  <text x="62" y="248" font-family="Arial, sans-serif" font-size="11" fill="#334155">TGZ 和镜像内容使用白名单；K8s 只允许 When StatefulSet、Service、ConfigMap、Secret 引用、PDB 等资源。</text>
+  <text x="62" y="272" font-family="Arial, sans-serif" font-size="11" fill="#64748b">CI 测试可以连接临时外部依赖，但 Redis、ETCD、Kafka 和测试下游不进入任何发布制品。</text>
 </svg>

@@ -17,10 +17,10 @@
   <!-- admin http layer -->
   <rect x="330" y="80" width="200" height="130" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
   <text x="430" y="108" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#b45309" text-anchor="middle">admin HTTP API</text>
-  <text x="430" y="130" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">本节新增的 HTTP 层</text>
-  <text x="430" y="152" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">协议转换层：映射到内部接口</text>
-  <text x="430" y="172" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">gRPC / ETCD / Controller</text>
-  <text x="430" y="194" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">（补上 HTTP 缺口）</text>
+  <text x="430" y="130" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">Spring Boot + Spring MVC</text>
+  <text x="430" y="152" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">OpenAPI 生成接口与 DTO</text>
+  <text x="430" y="172" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">统一响应 / 错误码 / Request ID</text>
+  <text x="430" y="194" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">薄协议层，不承载业务规则</text>
 
   <!-- when cluster -->
   <rect x="630" y="70" width="200" height="150" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
@@ -28,7 +28,7 @@
   <text x="648" y="124" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">gRPC 接入（40/45）</text>
   <text x="648" y="146" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">ETCD 时间轮元数据（42）</text>
   <text x="648" y="168" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">Controller 创建时间轮（48）</text>
-  <text x="648" y="190" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">Metrics（50）</text>
+  <text x="648" y="190" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">Metrics / Trace / Logs（50）</text>
 
   <line x1="230" y1="145" x2="328" y2="145" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#m1-amber)"/>
   <text x="238" y="136" font-family="Arial, sans-serif" font-size="10" fill="#b45309">HTTP/JSON</text>
@@ -36,6 +36,6 @@
   <text x="540" y="136" font-family="Arial, sans-serif" font-size="10" fill="#64748b">内部调用</text>
 
   <text x="20" y="255" font-family="Arial, sans-serif" font-size="12" fill="#334155">管理台是独立 Web 应用，通过 HTTP API 与 When 通信，可以和服务端分开部署。</text>
-  <text x="20" y="279" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">这层 admin HTTP API 就是之前缺的 HTTP 服务端：业务方也能用它 curl（开箱即用）。</text>
+  <text x="20" y="279" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">业务方调用 /api/v1；管理台只调用可信内网中的 /admin/v1，二者共用响应与错误契约。</text>
   <text x="20" y="301" font-family="Arial, sans-serif" font-size="11.5" fill="#94a3b8">跨域用 CORS 或反向代理；管理台只依赖 API，不依赖 When 内部实现。</text>
 </svg>

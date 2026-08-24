@@ -1,12 +1,13 @@
 package com.when.acceptance;
 
 
-import com.when.api.application.SubmitCommand;
-import com.when.api.grpc.DelayMessageServiceImpl;
+import com.google.protobuf.ByteString;
+import com.when.api.grpc.DelayMessageServiceGrpc;
+import com.when.api.grpc.QueryRequest;
+import com.when.api.grpc.SubmitRequest;
 import com.when.cluster.etcd.EtcdMetadataClient;
 import com.when.cluster.membership.EtcdClusterMembership;
 import com.when.cluster.membership.NodeInfo;
-import com.when.core.HttpSinkConfig;
 import com.when.core.MessageStatus;
 import com.when.core.NodeEndpoint;
 import com.when.core.Sink;
@@ -14,7 +15,7 @@ import com.when.core.SinkType;
 import com.when.ingress.application.DefaultDelayMessageHandler;
 import com.when.ingress.application.DelayMessageForwarder;
 import com.when.ingress.grpc.GrpcDelayMessageForwarder;
-import com.when.ingress.grpc.ForwardingServerInterceptor;
+import com.when.ingress.grpc.IngressGrpcServer;
 import com.when.ingress.id.SnowflakeMessageIdGenerator;
 import com.when.ingress.router.ConsistentHashRouter;
 import com.when.plugin.storage.redis.RedisStorageConfig;
@@ -28,9 +29,8 @@ import com.when.timewheel.TimeWheelRebuilder;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import io.grpc.ServerInterceptors;
-import io.grpc.inprocess.InProcessChannelBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 
 /** Executable first-stage acceptance using the Harness-managed Redis process. */
 public final class FirstStageAcceptance {
@@ -62,20 +62,11 @@ public final class FirstStageAcceptance {
                     DelayMessageForwarder.localOnly());
 
             remoteWheel.start();
-            String serverName = InProcessServerBuilder.generateName();
-            var server = InProcessServerBuilder.forName(serverName)
-                    .directExecutor()
-                    .addService(ServerInterceptors.intercept(
-                            new DelayMessageServiceImpl(remoteHandler),
-                            new ForwardingServerInterceptor()))
-                    .build()
-                    .start();
-            try (GrpcDelayMessageForwarder forwarder = new GrpcDelayMessageForwarder(
-                    Duration.ofSeconds(5),
-                    ignored -> InProcessChannelBuilder.forName(serverName).directExecutor().build())) {
+            try {
+                try (IngressGrpcServer remoteServer = new IngressGrpcServer(0, remoteHandler).start();
+                    GrpcDelayMessageForwarder forwarder = new GrpcDelayMessageForwarder()) {
                 StaticClusterView ingressView = new StaticClusterView(Map.of(
-                        TIME_WHEEL_ID,
-                        new NodeEndpoint(MASTER_NODE_ID, "in-process", 1)));
+                        TIME_WHEEL_ID, new NodeEndpoint(MASTER_NODE_ID, "127.0.0.1", remoteServer.port())));
                 DefaultDelayMessageHandler ingress = new DefaultDelayMessageHandler(
                         "node-a",
                         new SnowflakeMessageIdGenerator(1),
@@ -85,35 +76,53 @@ public final class FirstStageAcceptance {
                         storage,
                         forwarder);
 
-                String deliveredId = ingress.submit(command(System.currentTimeMillis() + 750)).messageId();
-                require(
-                        ingress.query(deliveredId).status() == MessageStatus.PENDING,
-                        "submitted message was not durably PENDING");
-                awaitStatus(ingress, deliveredId, MessageStatus.DELIVERED, Duration.ofSeconds(8));
-                require(
-                        sink.deliveredMessageIds().contains(deliveredId),
-                        "forwarded message did not reach the recording Sink");
+                    try (IngressGrpcServer ingressServer = new IngressGrpcServer(0, ingress).start()) {
+                    ManagedChannel channel = ManagedChannelBuilder
+                            .forAddress("127.0.0.1", ingressServer.port())
+                            .usePlaintext()
+                            .build();
+                    try {
+                        DelayMessageServiceGrpc.DelayMessageServiceBlockingStub client =
+                                DelayMessageServiceGrpc.newBlockingStub(channel);
+                        String deliveredId = client.submit(request(System.currentTimeMillis() + 750)).getMessageId();
+                        require(
+                                client.query(QueryRequest.newBuilder().setMessageId(deliveredId).build()).getStatus()
+                                        == com.when.common.proto.MessageStatus.PENDING,
+                                "server Submit did not durably persist a PENDING message");
+                        awaitStatus(client, deliveredId, MessageStatus.DELIVERED, Duration.ofSeconds(8));
+                        require(
+                                sink.deliveredMessageIds().contains(deliveredId),
+                                "forwarded message did not reach the recording Sink");
 
-                String cancelledId = ingress.submit(command(System.currentTimeMillis() + 30_000)).messageId();
-                require(
-                        ingress.cancel(cancelledId).status() == MessageStatus.CANCELLED,
-                        "pending cancellation did not succeed");
-                require(
-                        ingress.query(cancelledId).status() == MessageStatus.CANCELLED,
-                        "cancelled terminal state was not retained");
+                        String cancelledId = client.submit(request(System.currentTimeMillis() + 30_000)).getMessageId();
+                        require(
+                                client.cancel(com.when.api.grpc.CancelRequest.newBuilder()
+                                                .setMessageId(cancelledId)
+                                                .build())
+                                                .getStatus()
+                                        == com.when.common.proto.MessageStatus.CANCELLED,
+                                "pending cancellation did not succeed");
+                        require(
+                                client.query(QueryRequest.newBuilder().setMessageId(cancelledId).build()).getStatus()
+                                        == com.when.common.proto.MessageStatus.CANCELLED,
+                                "cancelled terminal state was not retained");
 
-                String rebuiltId = ingress.submit(command(System.currentTimeMillis() + 2_000)).messageId();
-                remoteWheel.stop();
-                NettyTimeWheel rebuiltWheel = new NettyTimeWheel(TIME_WHEEL_ID, dueHandler);
-                try {
-                    int rebuilt = new TimeWheelRebuilder(storage).rebuildAndStart(rebuiltWheel);
-                    require(rebuilt == 1, "restart rebuild did not load exactly the pending message");
-                    awaitStatus(ingress, rebuiltId, MessageStatus.DELIVERED, Duration.ofSeconds(8));
-                } finally {
-                    rebuiltWheel.stop();
+                        String rebuiltId = client.submit(request(System.currentTimeMillis() + 2_000)).getMessageId();
+                        remoteWheel.stop();
+                        NettyTimeWheel rebuiltWheel = new NettyTimeWheel(TIME_WHEEL_ID, dueHandler);
+                        try {
+                            int rebuilt = new TimeWheelRebuilder(storage).rebuildAndStart(rebuiltWheel);
+                            require(rebuilt == 1, "restart rebuild did not load exactly the pending message");
+                            awaitStatus(client, rebuiltId, MessageStatus.DELIVERED, Duration.ofSeconds(8));
+                        } finally {
+                            rebuiltWheel.stop();
+                        }
+                    } finally {
+                        channel.shutdownNow();
+                    }
+                }
                 }
             } finally {
-                server.shutdownNow();
                 remoteWheel.stop();
             }
         }
@@ -144,23 +153,29 @@ public final class FirstStageAcceptance {
         }
     }
 
-    private static SubmitCommand command(long deliverAt) {
-        return new SubmitCommand(
-                deliverAt,
-                SinkType.HTTP,
-                new HttpSinkConfig("https://example.invalid/callback", "POST", Map.of(), 1_000),
-                new byte[] {1, 2, 3},
-                "first-stage");
+    private static SubmitRequest request(long deliverAt) {
+        return SubmitRequest.newBuilder()
+                .setDeliverAt(deliverAt)
+                .setSinkType(com.when.common.proto.SinkType.HTTP)
+                .setSinkConfig(com.when.common.proto.SinkConfig.newBuilder()
+                        .setHttp(com.when.common.proto.HttpSinkConfig.newBuilder()
+                                .setUrl("https://example.invalid/callback")
+                                .setMethod("POST")
+                                .setTimeoutMs(1_000)))
+                .setPayload(ByteString.copyFrom(new byte[] {1, 2, 3}))
+                .setBusinessTag("first-stage")
+                .build();
     }
 
     private static void awaitStatus(
-            DefaultDelayMessageHandler handler,
+            DelayMessageServiceGrpc.DelayMessageServiceBlockingStub client,
             String messageId,
             MessageStatus expected,
             Duration timeout) throws InterruptedException {
         long deadline = System.nanoTime() + timeout.toNanos();
         while (System.nanoTime() < deadline) {
-            if (handler.query(messageId).status() == expected) {
+            if (client.query(QueryRequest.newBuilder().setMessageId(messageId).build()).getStatus()
+                    == toProto(expected)) {
                 return;
             }
             Thread.sleep(25);
@@ -173,5 +188,15 @@ public final class FirstStageAcceptance {
         if (!condition) {
             throw new IllegalStateException(message);
         }
+    }
+
+    private static com.when.common.proto.MessageStatus toProto(MessageStatus status) {
+        return switch (status) {
+            case PENDING -> com.when.common.proto.MessageStatus.PENDING;
+            case DELIVERING -> com.when.common.proto.MessageStatus.DELIVERING;
+            case DELIVERED -> com.when.common.proto.MessageStatus.DELIVERED;
+            case FAILED -> com.when.common.proto.MessageStatus.FAILED;
+            case CANCELLED -> com.when.common.proto.MessageStatus.CANCELLED;
+        };
     }
 }
