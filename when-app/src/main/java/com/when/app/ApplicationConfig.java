@@ -10,7 +10,6 @@ public record ApplicationConfig(
         String nodeId,
         int workerId,
         int grpcPort,
-        int httpPort,
         List<String> timeWheelIds) {
 
     public ApplicationConfig {
@@ -22,9 +21,6 @@ public record ApplicationConfig(
         }
         if (grpcPort < 0 || grpcPort > 65_535) {
             throw new IllegalArgumentException("grpcPort must be between 0 and 65535");
-        }
-        if (httpPort < 0 || httpPort > 65_535) {
-            throw new IllegalArgumentException("httpPort must be between 0 and 65535");
         }
         timeWheelIds = List.copyOf(Objects.requireNonNull(timeWheelIds, "timeWheelIds"));
         if (timeWheelIds.isEmpty() || timeWheelIds.stream().anyMatch(id -> id == null || id.isBlank())) {
@@ -48,12 +44,7 @@ public record ApplicationConfig(
         List<String> ids = IntStream.range(0, count)
                 .mapToObj(index -> "tw-" + index)
                 .toList();
-        int httpPort = integer(environment, "WHEN_HTTP_PORT", 8080);
-        return new ApplicationConfig(nodeId, workerId, grpcPort, httpPort, ids);
-    }
-
-    public ApplicationConfig(String nodeId, int workerId, int grpcPort, List<String> timeWheelIds) {
-        this(nodeId, workerId, grpcPort, 8080, timeWheelIds);
+        return new ApplicationConfig(nodeId, workerId, grpcPort, ids);
     }
 
     private static String required(Map<String, String> environment, String name) {

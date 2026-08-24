@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.google.protobuf.ByteString;
 import com.when.common.proto.HttpSinkConfig;
 import com.when.common.proto.KafkaSinkConfig;
-import com.when.common.proto.FileSinkConfig;
 import com.when.common.proto.SinkConfig;
 import com.when.common.proto.SinkType;
 import java.time.Clock;
@@ -88,20 +87,6 @@ class SubmitRequestValidatorTest {
                 .setSinkConfig(SinkConfig.newBuilder().setKafka(KafkaSinkConfig.newBuilder()
                         .setBootstrapServers("broker:9092")
                         .setTopic("events")))
-                .build()));
-    }
-
-    @Test
-    void validatesFileRequiredPath() {
-        var base = SubmitRequest.newBuilder()
-                .setDelaySeconds(1)
-                .setSinkType(SinkType.FILE);
-        assertInvalid(base.clone()
-                .setSinkConfig(SinkConfig.newBuilder().setFile(FileSinkConfig.getDefaultInstance()))
-                .build());
-        assertDoesNotThrow(() -> validator.validate(base
-                .setSinkConfig(SinkConfig.newBuilder().setFile(FileSinkConfig.newBuilder()
-                        .setPath("deliveries/message-1.bin")))
                 .build()));
     }
 

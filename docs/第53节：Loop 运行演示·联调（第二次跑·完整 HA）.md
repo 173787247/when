@@ -18,8 +18,6 @@
 ```text
 继续完成 When 项目第二阶段。先阅读仓库中的 AGENTS.md、loop.yaml，以及第 47—53 节的课程原料；不要臆测缺失的约定。
 
-如果当前 Runner 尚不支持 `--phase second`，或 `loop.yaml` 尚未定义 `second`、lesson47—lesson53、发布候选验收或第二阶段最终验收，则先把它视为第 46 节 Runner 的未完成交付：在独立的 Runner 修复分支中，仅按第 46 节附件和本节定义补齐 phase 编排、状态迁移、候选验收责任回退、lesson53 交付阶段、报告及 Runner 自身测试。不得在该修复分支实现 When 业务模块，不得修改课程原料、既有 Harness、验收命令或阈值来让检查通过。Runner 自测、`./loop validate`、`./loop plan --phase first` 和 `./loop plan --phase second` 全部通过后，提交并以 `--no-ff` 合并 `master`。**这不是完成条件：同一 Codex 任务必须立即切回干净的 `master`，重新执行本提示词的预检命令，并在预检通过后自动执行 `./loop run --phase second`；不得向用户索要第二条“继续”提示词或停在“下一步可以运行”。**
-
 确认当前在 master、工作区干净，且第一阶段为 FIRST PHASE COMPLETE。依次执行：
   ./loop validate
   ./loop plan --phase second

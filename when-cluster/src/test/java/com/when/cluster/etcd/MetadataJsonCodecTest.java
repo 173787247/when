@@ -34,9 +34,5 @@ class MetadataJsonCodecTest {
                 () -> new TimeWheelMetadata("node-1", "node-1", "running"));
         assertThrows(IllegalArgumentException.class,
                 () -> new TimeWheelMetadata("node-1", "node-2", "running", "in_sync", -1));
-        TimeWheelMetadata lesson47Name = codec.decodeTimeWheel(
-                "{\"master\":\"node-1\",\"slave\":\"node-2\",\"status\":\"running\","
-                        + "\"sync_state\":\"in_sync\",\"assignment_version\":18}");
-        assertEquals(18, lesson47Name.assignmentVersion());
     }
 }

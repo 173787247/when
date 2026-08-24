@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import com.when.observability.TraceOperations;
 
 /**
  * Lifecycle composition root for an already-configured node.
@@ -33,25 +32,12 @@ public final class WhenNode implements AutoCloseable {
             StoragePlugin storage,
             Collection<? extends TimeWheel> timeWheels,
             Collection<? extends AutoCloseable> ownedResources) {
-        this(grpcPort, handler, storage, timeWheels, ownedResources, TraceOperations.noop());
-    }
-
-    public WhenNode(
-            int grpcPort,
-            DelayMessageHandler handler,
-            StoragePlugin storage,
-            Collection<? extends TimeWheel> timeWheels,
-            Collection<? extends AutoCloseable> ownedResources,
-            TraceOperations traces) {
         this.timeWheels = List.copyOf(Objects.requireNonNull(timeWheels, "timeWheels"));
         if (this.timeWheels.isEmpty()) {
             throw new IllegalArgumentException("at least one local time wheel is required");
         }
         this.rebuilder = new TimeWheelRebuilder(Objects.requireNonNull(storage, "storage"));
-        this.grpcServer = new IngressGrpcServer(
-                grpcPort,
-                Objects.requireNonNull(handler, "handler"),
-                Objects.requireNonNull(traces, "traces"));
+        this.grpcServer = new IngressGrpcServer(grpcPort, Objects.requireNonNull(handler, "handler"));
         this.ownedResources = List.copyOf(Objects.requireNonNull(ownedResources, "ownedResources"));
     }
 
