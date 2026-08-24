@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+when_home="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+jar="$when_home/lib/when-server.jar"
+run_dir="${WHEN_RUN_DIR:-$when_home/var}"
+pid_file="$run_dir/when.pid"
+log_file="${WHEN_LOG_FILE:-$run_dir/when.log}"
+
+usage() {
+  printf 'usage: %s {run|start|stop|status} [--config FILE]\n' "$0" >&2
+}
+
+command_name="${1:-}"
+if [[ -z "$command_name" ]]; then
+  usage
+  exit 64
+fi
+shift
+
+config_file=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --config)
+      [[ $# -ge 2 ]] || { usage; exit 64; }
+      config_file="$2"
+      shift 2
+      ;;
+    *)
+      printf 'unknown argument: %s\n' "$1" >&2
+      usage
+      exit 64
+      ;;
+  esac
+done
+
+if [[ -n "$config_file" && ! -r "$config_file" ]]; then
+  printf 'configuration file is not readable: %s\n' "$config_file" >&2
+  exit 1
+fi
+
+if [[ -z "${WHEN_WORKER_ID:-}" && "${HOSTNAME:-}" =~ -([0-9]+)$ ]]; then
+  export WHEN_WORKER_ID="${BASH_REMATCH[1]}"
+fi
+export WHEN_GRPC_PORT="${WHEN_GRPC_PORT:-9090}"
+
+java_command=(java)
+if [[ -n "${JAVA_OPTS:-}" ]]; then
+  read -r -a java_options <<< "$JAVA_OPTS"
+  java_command+=("${java_options[@]}")
+fi
+java_command+=(-jar "$jar")
+
+is_running() {
+  [[ -f "$pid_file" ]] || return 1
+  local pid
+  pid="$(cat "$pid_file")"
+  [[ "$pid" =~ ^[0-9]+$ ]] && kill -0 "$pid" 2>/dev/null
+}
+
+case "$command_name" in
+  run)
+    exec "${java_command[@]}"
+    ;;
+  start)
+    mkdir -p "$run_dir"
+    if is_running; then
+      printf 'When is already running (pid %s)\n' "$(cat "$pid_file")"
+      exit 0
+    fi
+    "${java_command[@]}" </dev/null >>"$log_file" 2>&1 &
+    pid=$!
+    printf '%s\n' "$pid" > "$pid_file"
+    sleep 1
+    if ! kill -0 "$pid" 2>/dev/null; then
+      rm -f -- "$pid_file"
+      printf 'When failed to start; see %s\n' "$log_file" >&2
+      exit 1
+    fi
+    printf 'When started (pid %s)\n' "$pid"
+    ;;
+  stop)
+    if ! is_running; then
+      rm -f -- "$pid_file"
+      printf 'When is not running\n'
+      exit 0
+    fi
+    pid="$(cat "$pid_file")"
+    kill "$pid"
+    for _ in {1..30}; do
+      if ! kill -0 "$pid" 2>/dev/null; then
+        rm -f -- "$pid_file"
+        printf 'When stopped\n'
+        exit 0
+      fi
+      sleep 1
+    done
+    printf 'When did not stop within 30 seconds\n' >&2
+    exit 1
+    ;;
+  status)
+    if is_running; then
+      printf 'When is running (pid %s)\n' "$(cat "$pid_file")"
+      exit 0
+    fi
+    printf 'When is not running\n'
+    exit 3
+    ;;
+  *)
+    usage
+    exit 64
+    ;;
+esac

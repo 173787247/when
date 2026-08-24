@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package when.v1;
+
+option java_package = "com.when.api.grpc";
+option java_multiple_files = true;
+option java_outer_classname = "WhenApiProto";
+
+import "when-common.proto";
+
+service DelayMessageService {
+  rpc Submit (SubmitRequest) returns (SubmitResponse);
+  rpc Query (QueryRequest) returns (QueryResponse);
+  rpc Cancel (CancelRequest) returns (CancelResponse);
+}
+
+// Internal-only replication channel. Operations contain scheduling references only; message
+// payloads and Sink configuration remain authoritative in Redis.
+service ReplicaService {
+  rpc Sync (ReplicaSyncRequest) returns (ReplicaSyncResponse);
+}
+
+enum ReplicaOperationType {
+  REPLICA_OPERATION_TYPE_UNSPECIFIED = 0;
+  REPLICA_OPERATION_ADD = 1;
+  REPLICA_OPERATION_REMOVE = 2;
+}
+
+message ReplicaSyncRequest {
+  string operation_id = 1;
+  string tw_id = 2;
+  int64 assignment_version = 3;
+  int64 sequence = 4;
+  ReplicaOperationType type = 5;
+  string message_id = 6;
+  int64 deliver_at = 7;
+}
+
+message ReplicaSyncResponse {
+  string tw_id = 1;
+  int64 assignment_version = 2;
+  int64 last_applied_sequence = 3;
+}
+
+message SubmitRequest {
+  int64 deliver_at = 1;
+  int32 delay_seconds = 2;
+  SinkType sink_type = 3;
+  SinkConfig sink_config = 4;
+  bytes payload = 5;
+  string business_tag = 6;
+}
+
+message SubmitResponse {
+  string message_id = 1;
+  MessageStatus status = 2;
+  int64 deliver_at = 3;
+}
+
+message QueryRequest {
+  string message_id = 1;
+}
+
+message QueryResponse {
+  string message_id = 1;
+  MessageStatus status = 2;
+  int64 created_at = 3;
+  int64 deliver_at = 4;
+  int64 delivered_at = 5;
+  int32 retry_count = 6;
+  string last_error = 7;
+  SinkType sink_type = 8;
+  string business_tag = 9;
+}
+
+message CancelRequest {
+  string message_id = 1;
+}
+
+message CancelResponse {
+  string message_id = 1;
+  MessageStatus status = 2;
+}

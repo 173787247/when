@@ -1,0 +1,7 @@
+AGENTS.md
+docs/**
+harness/contracts/**
+harness/loop/schema/**
+harness/loop/protected-paths.txt
+when-acceptance/src/test/**
+.github/workflows/**

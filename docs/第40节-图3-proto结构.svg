@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 840 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="840" height="400" fill="#ffffff"/>
+  <defs>
+    <marker id="c-amber" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="c-grey" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker>
+  </defs>
+  <text x="20" y="28" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 3　proto 契约结构（service → 三组 请求/响应）</text>
+
+  <!-- service box -->
+  <rect x="25" y="120" width="205" height="180" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="127" y="147" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#b45309" text-anchor="middle">service</text>
+  <text x="127" y="165" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#b45309" text-anchor="middle">DelayMessageService</text>
+  <rect x="45" y="180" width="165" height="30" rx="6" fill="#ffffff" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="127" y="200" font-family="Arial, sans-serif" font-size="12" fill="#334155" text-anchor="middle">rpc Submit</text>
+  <rect x="45" y="216" width="165" height="30" rx="6" fill="#ffffff" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="127" y="236" font-family="Arial, sans-serif" font-size="12" fill="#334155" text-anchor="middle">rpc Query</text>
+  <rect x="45" y="252" width="165" height="30" rx="6" fill="#ffffff" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="127" y="272" font-family="Arial, sans-serif" font-size="12" fill="#334155" text-anchor="middle">rpc Cancel</text>
+
+  <!-- Submit req/resp -->
+  <rect x="330" y="70" width="220" height="66" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="340" y="90" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1d4ed8">SubmitRequest</text>
+  <text x="340" y="108" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">deliver_at / delay_seconds、sink_type、</text>
+  <text x="340" y="124" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">sink_config、payload、business_tag</text>
+  <rect x="600" y="70" width="215" height="66" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="610" y="90" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#15803d">SubmitResponse</text>
+  <text x="610" y="112" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">message_id、status、deliver_at</text>
+
+  <!-- Query req/resp -->
+  <rect x="330" y="170" width="220" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="340" y="190" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1d4ed8">QueryRequest</text>
+  <text x="340" y="212" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">message_id</text>
+  <rect x="600" y="170" width="215" height="60" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="610" y="190" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#15803d">QueryResponse</text>
+  <text x="610" y="212" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">status、时间戳、retry_count、last_error</text>
+
+  <!-- Cancel req/resp -->
+  <rect x="330" y="264" width="220" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="340" y="284" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1d4ed8">CancelRequest</text>
+  <text x="340" y="306" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">message_id</text>
+  <rect x="600" y="264" width="215" height="60" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="610" y="284" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#15803d">CancelResponse</text>
+  <text x="610" y="306" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">message_id、status = CANCELLED</text>
+
+  <!-- arrows service->req -->
+  <line x1="210" y1="195" x2="328" y2="103" stroke="#f59e0b" stroke-width="2" marker-end="url(#c-amber)"/>
+  <line x1="210" y1="231" x2="328" y2="200" stroke="#f59e0b" stroke-width="2" marker-end="url(#c-amber)"/>
+  <line x1="210" y1="267" x2="328" y2="294" stroke="#f59e0b" stroke-width="2" marker-end="url(#c-amber)"/>
+  <!-- req->resp -->
+  <line x1="550" y1="103" x2="598" y2="103" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#c-grey)"/>
+  <line x1="550" y1="200" x2="598" y2="200" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#c-grey)"/>
+  <line x1="550" y1="294" x2="598" y2="294" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#c-grey)"/>
+
+  <text x="25" y="360" font-family="Arial, sans-serif" font-size="12" fill="#64748b">枚举：SinkType（HTTP / KAFKA）、MessageStatus（PENDING / DELIVERING / DELIVERED / FAILED / CANCELLED）。</text>
+</svg>

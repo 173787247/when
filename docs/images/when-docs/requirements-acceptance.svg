@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 390">
+  <rect width="860" height="390" fill="#fff"/>
+  <defs><marker id="r" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#ef4444"/></marker><marker id="g" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#22c55e"/></marker></defs>
+  <g font-family="Arial,'PingFang SC',sans-serif">
+    <text x="20" y="30" font-size="15" font-weight="700" fill="#334155">完整 HA 验收：故障发生后，可靠性承诺仍然成立</text>
+    <rect x="35" y="72" width="155" height="64" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/><text x="113" y="99" text-anchor="middle" font-size="12.5" font-weight="700" fill="#1d4ed8">提交 100 条消息</text><text x="113" y="119" text-anchor="middle" font-size="11" fill="#475569">Redis 已确认</text>
+    <path d="M190 104H250" stroke="#ef4444" stroke-width="2.5" marker-end="url(#r)"/>
+    <rect x="260" y="72" width="155" height="64" rx="10" fill="#fee2e2" stroke="#ef4444" stroke-width="2.4"/><text x="338" y="99" text-anchor="middle" font-size="12.5" font-weight="700" fill="#b91c1c">终止 Master</text><text x="338" y="119" text-anchor="middle" font-size="11" fill="#475569">到期前制造故障</text>
+    <path d="M415 104H475" stroke="#22c55e" stroke-width="2.5" marker-end="url(#g)"/>
+    <rect x="485" y="72" width="155" height="64" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/><text x="563" y="99" text-anchor="middle" font-size="12.5" font-weight="700" fill="#b45309">Slave 接管</text><text x="563" y="119" text-anchor="middle" font-size="11" fill="#475569">恢复 + 提升 ≤ 10 秒</text>
+    <path d="M640 104H700" stroke="#22c55e" stroke-width="2.5" marker-end="url(#g)"/>
+    <rect x="710" y="72" width="120" height="64" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2.4"/><text x="770" y="99" text-anchor="middle" font-size="12.5" font-weight="700" fill="#15803d">全部投递</text><text x="770" y="119" text-anchor="middle" font-size="11" fill="#475569">0 丢失</text>
+    <text x="35" y="190" font-size="12" font-weight="700" fill="#64748b">四类证据必须相互印证</text>
+    <g font-size="12" text-anchor="middle"><rect x="50" y="215" width="170" height="58" rx="9" fill="#f8fafc" stroke="#94a3b8"/><text x="135" y="249" fill="#334155">自动化测试报告</text><rect x="245" y="215" width="170" height="58" rx="9" fill="#f8fafc" stroke="#94a3b8"/><text x="330" y="249" fill="#334155">Prometheus 指标</text><rect x="440" y="215" width="170" height="58" rx="9" fill="#f8fafc" stroke="#94a3b8"/><text x="525" y="249" fill="#334155">trace_id 日志</text><rect x="635" y="215" width="170" height="58" rx="9" fill="#f8fafc" stroke="#94a3b8"/><text x="720" y="249" fill="#334155">管理台状态变化</text></g>
+    <rect x="150" y="315" width="560" height="44" rx="9" fill="#fff7ed" stroke="#f59e0b"/><text x="430" y="342" text-anchor="middle" font-size="12" fill="#b45309">不丢优先；故障窗口允许少量重复；下游用 message_id 幂等吸收</text>
+  </g>
+</svg>

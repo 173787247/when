@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="400" fill="#ffffff"/>
+  <defs>
+    <marker id="cb-blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#3b82f6"/></marker>
+    <marker id="cb-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 3　到期回调：TimerTask 只核对当前代，并把重活异步交出去</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="28" y="76" width="164" height="62" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="110" y="102" text-anchor="middle" font-size="12" font-weight="bold" fill="#1d4ed8">Netty 到期回调</text>
+    <text x="110" y="123" text-anchor="middle" font-size="10" fill="#64748b">Timer 工作线程</text>
+
+    <rect x="244" y="76" width="164" height="62" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="326" y="102" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">核对当前 entry</text>
+    <text x="326" y="123" text-anchor="middle" font-size="10" fill="#64748b">generation 是否仍有效</text>
+
+    <rect x="460" y="76" width="164" height="62" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="542" y="102" text-anchor="middle" font-size="12" font-weight="bold" fill="#92400e">条件删除索引</text>
+    <text x="542" y="123" text-anchor="middle" font-size="10" fill="#64748b">remove(messageId, entry)</text>
+
+    <rect x="676" y="76" width="156" height="62" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+    <text x="754" y="102" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">提交到 dueExecutor</text>
+    <text x="754" y="123" text-anchor="middle" font-size="10" fill="#64748b">立即返回 Timer 线程</text>
+
+    <line x1="192" y1="107" x2="242" y2="107" stroke="#3b82f6" stroke-width="2" marker-end="url(#cb-blue)"/>
+    <line x1="408" y1="107" x2="458" y2="107" stroke="#f59e0b" stroke-width="2" marker-end="url(#cb-amber)"/>
+    <line x1="624" y1="107" x2="674" y2="107" stroke="#f59e0b" stroke-width="2" marker-end="url(#cb-amber)"/>
+
+    <rect x="460" y="190" width="372" height="66" rx="9" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.8"/>
+    <text x="646" y="217" text-anchor="middle" font-size="12" font-weight="bold" fill="#1d4ed8">本时间轮独立的有界 dueExecutor</text>
+    <text x="646" y="239" text-anchor="middle" font-size="10.5" fill="#334155">DueMessageHandler → 获取投递权 → 后续业务处理</text>
+    <line x1="754" y1="138" x2="700" y2="188" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#cb-blue)"/>
+
+    <rect x="28" y="292" width="804" height="82" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+    <text x="46" y="317" font-size="12.5" font-weight="bold" fill="#334155">TimerTask 的三条硬约束</text>
+    <text x="46" y="340" font-size="11" fill="#334155">① 不访问 Redis，不调用 HTTP/Kafka，不直接执行 Sink。</text>
+    <text x="46" y="360" font-size="11" fill="#334155">② 旧 generation 或已取消 entry 立即返回；同一 tick 内不保证消息顺序。</text>
+    <text x="450" y="340" font-size="11" fill="#334155">③ 执行器满时明确告警，不静默丢消息；Redis 仍是恢复依据。</text>
+  </g>
+</svg>

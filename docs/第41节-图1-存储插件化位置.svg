@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="360" fill="#ffffff"/>
+  <defs>
+    <marker id="s1-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="s1-grey" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　插件化存储：接口在公共契约，Redis 只是可替换的实现</text>
+
+  <!-- callers -->
+  <g font-family="Arial, sans-serif">
+    <rect x="25" y="80" width="160" height="46" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+    <text x="105" y="108" font-size="12" font-weight="bold" fill="#4338ca" text-anchor="middle">接入 / 路由（45）</text>
+    <rect x="25" y="150" width="160" height="46" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+    <text x="105" y="178" font-size="12" font-weight="bold" fill="#4338ca" text-anchor="middle">时间轮（44）</text>
+    <rect x="25" y="220" width="160" height="46" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+    <text x="105" y="248" font-size="12" font-weight="bold" fill="#4338ca" text-anchor="middle">故障恢复 / 重建</text>
+  </g>
+
+  <!-- StoragePlugin interface (core) -->
+  <rect x="320" y="105" width="200" height="150" rx="11" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="420" y="132" font-family="Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#b45309" text-anchor="middle">StoragePlugin 接口</text>
+  <text x="420" y="150" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">（第 39 节公共契约定义）</text>
+  <g font-family="Arial, sans-serif" font-size="11" fill="#334155">
+    <text x="340" y="176">save(Message)</text>
+    <text x="340" y="198">get(id)</text>
+    <text x="340" y="220">delete(id)</text>
+    <text x="340" y="242">loadByTimeWheel(twId)</text>
+  </g>
+
+  <!-- Redis impl (本节) -->
+  <rect x="620" y="105" width="215" height="150" rx="11" fill="#dcfce7" stroke="#22c55e" stroke-width="2.6"/>
+  <text x="727" y="134" font-family="Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#15803d" text-anchor="middle">RedisStoragePlugin</text>
+  <text x="727" y="153" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">本节产出 · 第一个插件</text>
+  <text x="727" y="182" font-family="Arial, sans-serif" font-size="11.5" fill="#334155" text-anchor="middle">写快 · 有 TTL · 普及度高</text>
+  <text x="727" y="206" font-family="Arial, sans-serif" font-size="11.5" fill="#334155" text-anchor="middle">按 message_id 拆小 key</text>
+  <text x="727" y="230" font-family="Arial, sans-serif" font-size="11.5" fill="#334155" text-anchor="middle">规避大 Key（不用 ZSet）</text>
+
+  <!-- arrows -->
+  <line x1="185" y1="103" x2="318" y2="150" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#s1-grey)"/>
+  <line x1="185" y1="173" x2="318" y2="180" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#s1-grey)"/>
+  <line x1="185" y1="243" x2="318" y2="210" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#s1-grey)"/>
+  <text x="210" y="140" font-family="Arial, sans-serif" font-size="10" fill="#64748b">只依赖接口</text>
+
+  <line x1="520" y1="180" x2="618" y2="180" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#s1-amber)"/>
+  <text x="527" y="170" font-family="Arial, sans-serif" font-size="10.5" fill="#b45309">实现</text>
+
+  <text x="20" y="310" font-family="Arial, sans-serif" font-size="12" fill="#64748b">调用方只认 StoragePlugin 接口；以后换 RocksDB / 其它存储，只加一个实现，核心代码不动。</text>
+  <text x="20" y="332" font-family="Arial, sans-serif" font-size="11.5" fill="#94a3b8">Redis 短暂不可用时：写入失败、API 明确报错，由业务方重试。</text>
+</svg>

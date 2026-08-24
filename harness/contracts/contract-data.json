@@ -1,0 +1,12 @@
+{
+  "stages": {
+    "lesson39": ["pom.xml", "mvnw", "when-common"],
+    "lesson40": ["when-api"],
+    "lesson41": ["when-storage-redis"],
+    "lesson42": ["when-cluster"],
+    "lesson43": ["when-cluster"],
+    "lesson44": ["when-timewheel"],
+    "lesson45": ["when-ingress-router", "when-app", "when-acceptance"]
+  },
+  "forbidden_terms": ["Testcontainers", "docker compose", "docker-compose"]
+}

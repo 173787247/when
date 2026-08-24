@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="380" fill="#ffffff"/>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　Prometheus 指标五类：关键路径每一步都有指标</text>
+
+  <g font-family="Arial, sans-serif">
+    <!-- 流量 -->
+    <rect x="25" y="60" width="255" height="130" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="152" y="84" font-size="12.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">流量</text>
+    <text x="42" y="108" font-size="10.5" fill="#334155">when_api_requests_total</text>
+    <text x="42" y="130" font-size="10.5" fill="#334155">when_messages_submitted_total</text>
+    <text x="42" y="152" font-size="10.5" fill="#334155">when_messages_delivered_total</text>
+    <text x="42" y="176" font-size="10" fill="#64748b">按 sink_type / status 打 label</text>
+
+    <!-- 存量 -->
+    <rect x="300" y="60" width="255" height="130" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+    <text x="427" y="84" font-size="12.5" font-weight="bold" fill="#15803d" text-anchor="middle">存量</text>
+    <text x="317" y="108" font-size="10.5" fill="#334155">when_messages_in_state{state}</text>
+    <text x="317" y="130" font-size="10.5" fill="#334155">when_timewheel_messages{tw_id}</text>
+    <text x="317" y="160" font-size="10" fill="#64748b">各状态 / 各时间轮的存量</text>
+
+    <!-- 质量 -->
+    <rect x="575" y="60" width="260" height="130" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+    <text x="705" y="84" font-size="12.5" font-weight="bold" fill="#b45309" text-anchor="middle">质量（最该看）</text>
+    <text x="592" y="108" font-size="10.5" fill="#334155">when_delivery_lag_seconds</text>
+    <text x="592" y="130" font-size="10.5" fill="#334155">when_delivery_duration_seconds</text>
+    <text x="592" y="152" font-size="10.5" fill="#334155">when_sink_failure_rate</text>
+    <text x="592" y="176" font-size="10" fill="#64748b">投递延迟 / 耗时 / 失败率</text>
+
+    <!-- 集群 -->
+    <rect x="130" y="210" width="290" height="120" rx="10" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
+    <text x="275" y="234" font-size="12.5" font-weight="bold" fill="#4338ca" text-anchor="middle">集群</text>
+    <text x="147" y="258" font-size="10.5" fill="#334155">when_cluster_nodes_total</text>
+    <text x="147" y="280" font-size="10.5" fill="#334155">when_controller_elections_total</text>
+    <text x="147" y="302" font-size="10.5" fill="#334155">when_master_failover_total{tw_id}</text>
+    <text x="147" y="322" font-size="10" fill="#64748b">选举 / 切换 / 上下线，事后可复盘</text>
+
+    <!-- 资源 -->
+    <rect x="440" y="210" width="290" height="120" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+    <text x="585" y="234" font-size="12.5" font-weight="bold" fill="#475569" text-anchor="middle">资源</text>
+    <text x="457" y="258" font-size="10.5" fill="#334155">when_redis_operations_total{op,status}</text>
+    <text x="457" y="280" font-size="10.5" fill="#334155">when_etcd_operations_total{op,status}</text>
+    <text x="457" y="308" font-size="10" fill="#64748b">对 Redis/ETCD 的调用计数</text>
+  </g>
+
+  <text x="20" y="360" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">原则：关键路径必有指标 · label 不放高基数字段（如 message_id）· 故障场景（选举/切换/上下线）都有计数。用 Micrometer 实现。</text>
+</svg>

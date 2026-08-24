@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 460">
+  <rect width="860" height="460" fill="#fff"/>
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#f59e0b"/></marker></defs>
+  <g font-family="Arial,'PingFang SC',sans-serif">
+    <text x="20" y="30" font-size="15" font-weight="700" fill="#334155">When 的 Loop Engineering：明确输入 + 自动验收 + 修订原料</text>
+    <rect x="300" y="65" width="260" height="62" rx="11" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/><text x="430" y="91" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">① 读取原料</text><text x="430" y="112" text-anchor="middle" font-size="11" fill="#475569">基准文档 + 公共契约 + 模块任务</text>
+    <rect x="605" y="180" width="200" height="62" rx="11" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/><text x="705" y="206" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">② 计划与实现</text><text x="705" y="227" text-anchor="middle" font-size="11" fill="#475569">边界内自主执行</text>
+    <rect x="515" y="325" width="230" height="62" rx="11" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/><text x="630" y="351" text-anchor="middle" font-size="13" font-weight="700" fill="#15803d">③ 自动验收</text><text x="630" y="372" text-anchor="middle" font-size="11" fill="#475569">测试 · CI · 故障演练 · 安全</text>
+    <rect x="115" y="325" width="230" height="62" rx="11" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/><text x="230" y="351" text-anchor="middle" font-size="13" font-weight="700" fill="#b91c1c">④ 失败归因</text><text x="230" y="372" text-anchor="middle" font-size="11" fill="#475569">实现错误 or 原料缺陷</text>
+    <rect x="55" y="180" width="200" height="62" rx="11" fill="#fff7ed" stroke="#f59e0b" stroke-width="2"/><text x="155" y="206" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">⑤ 回填原料</text><text x="155" y="227" text-anchor="middle" font-size="11" fill="#475569">修输入，从干净状态重跑</text>
+    <path d="M560 96Q690 105 705 180M705 242Q705 300 650 325M515 356H345M215 325Q145 290 155 242M255 202Q270 120 300 105" fill="none" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#a)"/>
+    <rect x="292" y="195" width="276" height="74" rx="12" fill="#f8fafc" stroke="#64748b" stroke-width="1.6"/><text x="430" y="222" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">人的职责</text><text x="430" y="244" text-anchor="middle" font-size="11.5" fill="#475569">目标 · 架构 · 拆解 · Review · 最终验收</text><text x="430" y="260" text-anchor="middle" font-size="10.5" fill="#64748b">验收规则和边界不能由执行 Loop 修改</text>
+  </g>
+</svg>

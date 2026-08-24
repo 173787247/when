@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 980 430" xmlns="http://www.w3.org/2000/svg">
+  <rect width="980" height="430" fill="#ffffff"/>
+  <defs>
+    <marker id="obs-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+  <text x="24" y="32" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#334155">图 0　When 可观测体系：发现问题 → 定位链路 → 查看现场 → 控制流量</text>
+
+  <rect x="28" y="74" width="190" height="270" rx="12" fill="#eef2ff" stroke="#6366f1" stroke-width="2.2"/>
+  <text x="123" y="102" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#4338ca" text-anchor="middle">When 节点</text>
+  <g font-family="Arial, sans-serif" font-size="12" fill="#334155">
+    <text x="50" y="140">Metrics：流量 / 延迟 / 错误</text>
+    <text x="50" y="184">Logs：JSON + event</text>
+    <text x="50" y="228">Traces：Span + Link</text>
+    <text x="50" y="272">Health：/health /ready</text>
+    <text x="50" y="316" fill="#64748b">统一 node_id / trace_id</text>
+  </g>
+
+  <rect x="282" y="74" width="210" height="270" rx="12" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.2"/>
+  <text x="387" y="102" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#b45309" text-anchor="middle">采集与路由</text>
+  <g font-family="Arial, sans-serif" font-size="12" fill="#334155">
+    <text x="306" y="140">Prometheus 抓取 /metrics</text>
+    <text x="306" y="184">日志采集器读取 stdout</text>
+    <text x="306" y="228">OTel Collector 接收 OTLP</text>
+    <text x="306" y="272">K8s / LB 调用健康端点</text>
+    <text x="306" y="316" fill="#64748b">异步、有界、失败不阻塞业务</text>
+  </g>
+
+  <rect x="556" y="74" width="170" height="270" rx="12" fill="#f0fdf4" stroke="#22c55e" stroke-width="2.2"/>
+  <text x="641" y="102" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#15803d" text-anchor="middle">存储</text>
+  <g font-family="Arial, sans-serif" font-size="12" fill="#334155" text-anchor="middle">
+    <text x="641" y="140">Prometheus</text>
+    <text x="641" y="184">Loki</text>
+    <text x="641" y="228">Tempo</text>
+    <text x="641" y="272">节点就绪状态</text>
+    <text x="641" y="316" fill="#64748b">按 trace_id 互相关联</text>
+  </g>
+
+  <rect x="790" y="104" width="164" height="210" rx="12" fill="#f8fafc" stroke="#64748b" stroke-width="2.2"/>
+  <text x="872" y="132" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#334155" text-anchor="middle">Grafana / 运维</text>
+  <g font-family="Arial, sans-serif" font-size="12" fill="#334155" text-anchor="middle">
+    <text x="872" y="172">指标发现异常</text>
+    <text x="872" y="210">Trace 定位慢点</text>
+    <text x="872" y="248">日志解释原因</text>
+    <text x="872" y="286">健康检查摘挂节点</text>
+  </g>
+
+  <line x1="218" y1="209" x2="280" y2="209" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#obs-arrow)"/>
+  <line x1="492" y1="209" x2="554" y2="209" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#obs-arrow)"/>
+  <line x1="726" y1="209" x2="788" y2="209" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#obs-arrow)"/>
+
+  <rect x="170" y="374" width="640" height="36" rx="18" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="490" y="397" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#b45309" text-anchor="middle">同一套资源属性、Trace Context、事件名和安全规则贯穿四条链路</text>
+</svg>

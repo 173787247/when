@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/xsd/maven-4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.when</groupId>
+        <artifactId>when-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>when-admin-web</artifactId>
+    <packaging>pom</packaging>
+    <name>When Admin Web</name>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>verify-static-console</id>
+                        <phase>verify</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <checksum file="${maven.multiModuleProjectDirectory}/openapi/when-v1.yaml"
+                                          algorithm="SHA-256" property="openapi.actual.sha256"/>
+                                <loadfile property="openapi.web.sha256"
+                                          srcFile="${project.basedir}/src/api/.when-v1.sha256"/>
+                                <condition property="openapi.client.current">
+                                    <equals arg1="${openapi.actual.sha256}" arg2="${openapi.web.sha256}" trim="true"/>
+                                </condition>
+                                <available file="${project.basedir}/src/App.vue" property="app.present"/>
+                                <available file="${project.basedir}/src/api/generated.ts" property="client.present"/>
+                                <fail unless="app.present">Vue console source is missing</fail>
+                                <fail unless="client.present">Generated TypeScript contract is missing</fail>
+                                <fail unless="openapi.client.current">Generated TypeScript contract is stale</fail>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

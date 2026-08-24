@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 450" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="450" fill="#ffffff"/>
+  <defs>
+    <marker id="htw-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　HashedWheelTimer：槽位决定位置，remainingRounds 决定第几圈触发</text>
+
+  <g font-family="Arial, sans-serif">
+    <circle cx="260" cy="225" r="136" fill="#eff6ff" stroke="#3b82f6" stroke-width="2.5"/>
+    <circle cx="260" cy="225" r="72" fill="#ffffff" stroke="#bfdbfe" stroke-width="2"/>
+    <text x="260" y="218" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1d4ed8">wheelSize = 12</text>
+    <text x="260" y="239" text-anchor="middle" font-size="11" fill="#64748b">tick = 100 ms</text>
+
+    <g fill="#dbeafe" stroke="#60a5fa" stroke-width="1.5" text-anchor="middle" font-size="10.5" fill-opacity="1">
+      <rect x="239" y="70" width="42" height="30" rx="6"/><rect x="316" y="91" width="42" height="30" rx="6"/>
+      <rect x="365" y="148" width="42" height="30" rx="6"/><rect x="377" y="210" width="42" height="30" rx="6"/>
+      <rect x="365" y="272" width="42" height="30" rx="6"/><rect x="316" y="329" width="42" height="30" rx="6"/>
+      <rect x="239" y="350" width="42" height="30" rx="6"/><rect x="162" y="329" width="42" height="30" rx="6"/>
+      <rect x="113" y="272" width="42" height="30" rx="6"/><rect x="101" y="210" width="42" height="30" rx="6"/>
+      <rect x="113" y="148" width="42" height="30" rx="6"/><rect x="162" y="91" width="42" height="30" rx="6"/>
+    </g>
+    <g text-anchor="middle" font-size="10.5" fill="#334155">
+      <text x="260" y="90">0</text><text x="337" y="111">1</text><text x="386" y="168">2</text>
+      <text x="398" y="230">3</text><text x="386" y="292">4</text><text x="337" y="349">5</text>
+      <text x="260" y="370">6</text><text x="183" y="349">7</text><text x="134" y="292">8</text>
+      <text x="122" y="230">9</text><text x="134" y="168">10</text><text x="183" y="111">11</text>
+    </g>
+
+    <line x1="260" y1="127" x2="260" y2="102" stroke="#f59e0b" stroke-width="3" marker-end="url(#htw-arrow)"/>
+    <text x="260" y="139" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#b45309">当前指针</text>
+
+    <rect x="352" y="198" width="92" height="54" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="398" y="220" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#92400e">槽 3</text>
+    <text x="398" y="238" text-anchor="middle" font-size="9.8" fill="#92400e">A:r=0　B:r=2</text>
+
+    <rect x="500" y="72" width="330" height="112" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+    <text x="520" y="99" font-size="12.5" font-weight="bold" fill="#334155">任务如何进入时间轮</text>
+    <text x="520" y="125" font-size="11" fill="#334155">ticks = ceil(delay / tickDuration)</text>
+    <text x="520" y="148" font-size="11" fill="#334155">slot = (currentTick + ticks) % wheelSize</text>
+    <text x="520" y="171" font-size="11" fill="#334155">remainingRounds = ticks / wheelSize</text>
+
+    <rect x="500" y="205" width="330" height="136" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.8"/>
+    <text x="520" y="233" font-size="12.5" font-weight="bold" fill="#1d4ed8">指针走到槽 3</text>
+    <text x="520" y="261" font-size="11" fill="#334155">任务 A：remainingRounds = 0 → 到期触发</text>
+    <text x="520" y="286" font-size="11" fill="#334155">任务 B：remainingRounds = 2 → 减为 1，继续等待</text>
+    <text x="520" y="315" font-size="10.5" fill="#64748b">长延时不用更多槽，而是让同一槽多转几圈。</text>
+
+    <rect x="500" y="363" width="330" height="54" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.8"/>
+    <text x="665" y="386" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#92400e">HashedWheelTimer 是近似定时器</text>
+    <text x="665" y="405" text-anchor="middle" font-size="10.5" fill="#64748b">实际精度受 tick、任务量、CPU 和 GC 影响</text>
+  </g>
+</svg>

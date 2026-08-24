@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: when
+spec:
+  serviceName: when-headless
+  replicas: 3
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: when
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: when
+    spec:
+      serviceAccountName: when
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 35
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: when
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: when
+      containers:
+        - name: when
+          image: whenproject/when:1.0.0
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: when-config
+          env:
+            - name: WHEN_NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: WHEN_NODE_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: WHEN_ETCD_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: when-external-credentials
+                  key: etcd-username
+                  optional: true
+            - name: WHEN_ETCD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: when-external-credentials
+                  key: etcd-password
+                  optional: true
+            - name: WHEN_REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: when-external-credentials
+                  key: redis-password
+                  optional: true
+            - name: WHEN_REDIS_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: when-external-credentials
+                  key: redis-username
+                  optional: true
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: management
+              containerPort: 8081
+            - name: grpc
+              containerPort: 9090
+          startupProbe:
+            httpGet:
+              path: /health
+              port: management
+            failureThreshold: 30
+            periodSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: management
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: runtime
+              mountPath: /opt/when/var
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: runtime
+          emptyDir: {}

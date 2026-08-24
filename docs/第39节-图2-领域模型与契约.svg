@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 430" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="430" fill="#ffffff"/>
+  <defs>
+    <marker id="p2-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="p2-grey" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　Message 领域模型（左）与它流经的模块和公共接口（右）</text>
+
+  <!-- Message object box -->
+  <rect x="25" y="70" width="215" height="300" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="132" y="96" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#b45309" text-anchor="middle">Message（内部领域模型）</text>
+  <line x1="45" y1="108" x2="220" y2="108" stroke="#f1d9a0" stroke-width="1.4"/>
+  <g font-family="Arial, sans-serif" font-size="11.5" fill="#334155">
+    <text x="45" y="132">messageId　全局唯一 ID</text>
+    <text x="45" y="156">deliverAt　到期时间(ms)</text>
+    <text x="45" y="180">status　状态机</text>
+    <text x="45" y="204">sinkType / sinkConfig　投递目标</text>
+    <text x="45" y="228">payload　消息体(≤64KB)</text>
+    <text x="45" y="252">businessTag　业务标签</text>
+    <text x="45" y="276">createdAt / deliveredAt</text>
+    <text x="45" y="300">retryCount / nextAttemptAt</text>
+    <text x="45" y="324">traceId / lastError / timeWheelId</text>
+  </g>
+  <text x="132" y="352" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">存储层是权威数据来源，内存只用于加速</text>
+
+  <!-- pipeline on right -->
+  <g font-family="Arial, sans-serif">
+    <!-- 接入/路由 -->
+    <rect x="300" y="90" width="150" height="66" rx="9" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+    <text x="375" y="118" font-size="12.5" font-weight="bold" fill="#4338ca" text-anchor="middle">接入 / 路由（45）</text>
+    <text x="375" y="138" font-size="10.5" fill="#64748b" text-anchor="middle">Router：hash 选时间轮</text>
+
+    <!-- 时间轮 -->
+    <rect x="510" y="90" width="150" height="66" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="585" y="118" font-size="12.5" font-weight="bold" fill="#b45309" text-anchor="middle">时间轮（44）</text>
+    <text x="585" y="138" font-size="10.5" fill="#64748b" text-anchor="middle">TimeWheel：到期触发</text>
+
+    <!-- Sink -->
+    <rect x="700" y="200" width="140" height="66" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+    <text x="770" y="228" font-size="12.5" font-weight="bold" fill="#15803d" text-anchor="middle">Sink 投递</text>
+    <text x="770" y="248" font-size="10.5" fill="#64748b" text-anchor="middle">Sink：投到下游</text>
+
+    <!-- 存储 -->
+    <rect x="405" y="280" width="150" height="66" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+    <text x="480" y="308" font-size="12.5" font-weight="bold" fill="#15803d" text-anchor="middle">存储 / Redis（41）</text>
+    <text x="480" y="328" font-size="10.5" fill="#64748b" text-anchor="middle">StoragePlugin：落库</text>
+  </g>
+
+  <!-- flow arrows carrying Message -->
+  <line x1="240" y1="150" x2="298" y2="123" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#p2-amber)"/>
+  <text x="250" y="140" font-family="Arial, sans-serif" font-size="10" fill="#b45309">Message</text>
+  <line x1="450" y1="123" x2="508" y2="123" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#p2-amber)"/>
+  <line x1="620" y1="156" x2="740" y2="198" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#p2-amber)"/>
+  <text x="648" y="182" font-family="Arial, sans-serif" font-size="10" fill="#b45309">到期投递</text>
+
+  <!-- storage links (dashed grey) -->
+  <line x1="375" y1="156" x2="460" y2="278" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5,4" marker-end="url(#p2-grey)"/>
+  <text x="360" y="235" font-family="Arial, sans-serif" font-size="10" fill="#64748b">先落库</text>
+  <line x1="540" y1="280" x2="575" y2="158" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5,4" marker-end="url(#p2-grey)"/>
+  <text x="556" y="235" font-family="Arial, sans-serif" font-size="10" fill="#64748b">恢复重建</text>
+
+  <text x="300" y="392" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">同一个 Message 贯穿全程；每个模块实现对应的公共接口，接口一致才可以完成集成。</text>
+</svg>

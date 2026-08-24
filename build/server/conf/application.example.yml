@@ -1,0 +1,29 @@
+# Reference configuration contract. Runtime values are supplied through the
+# corresponding environment variables so credentials never enter this file.
+when:
+  node-id: ${WHEN_NODE_ID}
+  worker-id: ${WHEN_WORKER_ID}
+  ports:
+    http: ${WHEN_HTTP_PORT:8080}
+    management: ${WHEN_MANAGEMENT_PORT:8081}
+    grpc: ${WHEN_GRPC_PORT:9090}
+  cluster:
+    etcd:
+      endpoints: ${WHEN_ETCD_ENDPOINTS}
+      username: ${WHEN_ETCD_USERNAME:}
+      password: ${WHEN_ETCD_PASSWORD:}
+  storage:
+    redis:
+      host: ${WHEN_REDIS_HOST}
+      port: ${WHEN_REDIS_PORT:6379}
+      username: ${WHEN_REDIS_USERNAME:}
+      password: ${WHEN_REDIS_PASSWORD:}
+      tls: ${WHEN_REDIS_TLS:false}
+  sinks:
+    kafka:
+      bootstrap-servers: ${WHEN_KAFKA_BOOTSTRAP_SERVERS:}
+  observability:
+    otlp-endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:}
+  logging:
+    level: ${WHEN_LOG_LEVEL:INFO}
+    format: ${WHEN_LOG_FORMAT:json}

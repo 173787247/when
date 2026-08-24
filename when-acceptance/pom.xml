@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.when</groupId>
+        <artifactId>when-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+    <artifactId>when-acceptance</artifactId>
+    <name>When First-stage Acceptance</name>
+    <properties><maven.main.skip>true</maven.main.skip></properties>
+    <build><sourceDirectory>src/main/src/main/java</sourceDirectory></build>
+    <profiles>
+        <profile>
+            <id>acceptance</id>
+            <build><plugins><plugin>
+                <groupId>org.apache.maven.plugins</groupId><artifactId>maven-antrun-plugin</artifactId><version>3.1.0</version>
+                <executions><execution><id>build-reactor-and-run-acceptance</id><phase>integration-test</phase><goals><goal>run</goal></goals>
+                    <configuration><skip>${antrun.skip}</skip><target><property environment="env"/><exec executable="${maven.multiModuleProjectDirectory}/mvnw" dir="${maven.multiModuleProjectDirectory}" failonerror="true">
+                        <env key="WHEN_REDIS_HOST" value="${env.WHEN_REDIS_HOST}"/><env key="WHEN_REDIS_PORT" value="${env.WHEN_REDIS_PORT}"/><env key="WHEN_ETCD_ENDPOINTS" value="${env.WHEN_ETCD_ENDPOINTS}"/>
+                        <arg value="-q"/><arg value="-Dacceptance.inner=true"/><arg value="verify"/>
+                    </exec></target></configuration>
+                </execution></executions>
+            </plugin></plugins></build>
+        </profile>
+        <profile>
+            <id>acceptance-inner</id>
+            <activation><property><name>acceptance.inner</name></property></activation>
+            <properties><maven.main.skip>false</maven.main.skip></properties>
+            <dependencies>
+                <dependency><groupId>com.when</groupId><artifactId>when-ingress-router</artifactId><version>${project.version}</version></dependency>
+                <dependency><groupId>com.when</groupId><artifactId>when-storage-redis</artifactId><version>${project.version}</version></dependency>
+                <dependency><groupId>com.when</groupId><artifactId>when-timewheel</artifactId><version>${project.version}</version></dependency>
+                <dependency><groupId>com.when</groupId><artifactId>when-cluster</artifactId><version>${project.version}</version></dependency>
+                <dependency><groupId>com.when</groupId><artifactId>when-test-support</artifactId><version>${project.version}</version></dependency>
+            </dependencies>
+            <build><plugins><plugin>
+                <groupId>org.apache.maven.plugins</groupId><artifactId>maven-antrun-plugin</artifactId><version>3.1.0</version>
+                <executions><execution><id>first-stage-acceptance</id><phase>integration-test</phase><goals><goal>run</goal></goals>
+                    <configuration><skip>${antrun.skip}</skip><target><property environment="env"/><java classname="com.when.acceptance.FirstStageAcceptance" fork="true" failonerror="true" output="${project.build.directory}/first-stage-acceptance.log">
+                        <env key="WHEN_REDIS_HOST" value="${env.WHEN_REDIS_HOST}"/><env key="WHEN_REDIS_PORT" value="${env.WHEN_REDIS_PORT}"/><env key="WHEN_ETCD_ENDPOINTS" value="${env.WHEN_ETCD_ENDPOINTS}"/>
+                        <classpath refid="maven.runtime.classpath"/>
+                    </java></target></configuration>
+                </execution></executions>
+            </plugin></plugins></build>
+        </profile>
+    </profiles>
+</project>

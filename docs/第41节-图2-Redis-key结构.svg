@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="380" fill="#ffffff"/>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　Redis key 结构：按 message_id 拆成小 key，规避大 Key</text>
+
+  <!-- key 1: message body -->
+  <rect x="25" y="60" width="500" height="66" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="40" y="84" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#1d4ed8">when:msg:{message_id}</text>
+  <text x="40" y="106" font-family="Arial, sans-serif" font-size="11" fill="#334155">STRING · Message 的 JSON 序列化 · 一条消息一个 key</text>
+  <rect x="545" y="72" width="290" height="42" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.6"/>
+  <text x="690" y="98" font-family="Arial, sans-serif" font-size="11" fill="#475569" text-anchor="middle">TTL = deliver_at + 7 天（兜底自动清）</text>
+
+  <!-- key 2: index -->
+  <rect x="25" y="150" width="500" height="66" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="40" y="174" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#1d4ed8">when:tw:{tw_id}:idx:{message_id}</text>
+  <text x="40" y="196" font-family="Arial, sans-serif" font-size="11" fill="#334155">STRING · 存到期时间戳 · 按时间轮维度分散，仍是独立小 key</text>
+  <rect x="545" y="162" width="290" height="42" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.6"/>
+  <text x="690" y="188" font-family="Arial, sans-serif" font-size="11" fill="#475569" text-anchor="middle">TTL 同上</text>
+
+  <!-- key 3: slot set (recovery only) -->
+  <rect x="25" y="240" width="500" height="66" rx="9" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <text x="40" y="264" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#475569">when:tw:{tw_id}:slot:{slot_key}</text>
+  <text x="40" y="286" font-family="Arial, sans-serif" font-size="11" fill="#475569">SET · 槽位内的 message_id 集合 · 仅节点重启恢复时用，日常调度不依赖</text>
+  <rect x="545" y="252" width="290" height="42" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.6"/>
+  <text x="690" y="278" font-family="Arial, sans-serif" font-size="11" fill="#475569" text-anchor="middle">可选 · 恢复加速</text>
+
+  <!-- bottom callout -->
+  <rect x="25" y="326" width="810" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.8"/>
+  <text x="42" y="351" font-family="Arial, sans-serif" font-size="12" fill="#b45309"><tspan font-weight="bold">强制约束：</tspan>不用 ZSet 大集合、不用大 Hash 把消息堆一起 —— 那是大 Key，Redis 单线程对大 Key 极敏感。每条消息独立小 key。</text>
+</svg>

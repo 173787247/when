@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 430" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="430" fill="#ffffff"/>
+  <defs>
+    <marker id="i1-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="i1-grey" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　写入链路：接入层把请求变成 Message，路由到目标时间轮</text>
+
+  <!-- steps down -->
+  <rect x="40" y="60" width="300" height="46" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="55" y="88" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#4338ca">① 收到 Submit（gRPC，第 40 节契约）</text>
+
+  <rect x="40" y="120" width="300" height="46" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="55" y="148" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#b45309">② 参数校验（委托 Sink.validateConfig）</text>
+
+  <rect x="40" y="180" width="300" height="46" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="55" y="208" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#b45309">③ Snowflake 算法生成全局唯一 messageId</text>
+
+  <rect x="40" y="240" width="300" height="46" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+  <text x="55" y="268" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#b45309">④ 一致性哈希(messageId) → timeWheelId</text>
+
+  <line x1="190" y1="106" x2="190" y2="118" stroke="#f59e0b" stroke-width="2" marker-end="url(#i1-amber)"/>
+  <line x1="190" y1="166" x2="190" y2="178" stroke="#f59e0b" stroke-width="2" marker-end="url(#i1-amber)"/>
+  <line x1="190" y1="226" x2="190" y2="238" stroke="#f59e0b" stroke-width="2" marker-end="url(#i1-amber)"/>
+
+  <!-- branch: local vs remote -->
+  <rect x="400" y="235" width="200" height="56" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="500" y="259" font-family="Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">Master 在本节点？</text>
+  <text x="500" y="279" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">查集群视图（第 43 节）</text>
+  <line x1="340" y1="263" x2="398" y2="263" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#i1-amber)"/>
+
+  <rect x="650" y="180" width="180" height="46" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <text x="740" y="208" font-family="Arial, sans-serif" font-size="11" fill="#475569" text-anchor="middle">否 → gRPC 转发到目标节点</text>
+  <rect x="650" y="300" width="180" height="46" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="740" y="328" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#15803d" text-anchor="middle">是 → 本地处理</text>
+  <line x1="560" y1="238" x2="700" y2="224" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#i1-grey)"/>
+  <line x1="560" y1="288" x2="700" y2="302" stroke="#22c55e" stroke-width="2" marker-end="url(#i1-amber)"/>
+
+  <!-- local处理: 先落库再入轮 -->
+  <rect x="360" y="330" width="230" height="70" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+  <text x="475" y="354" font-family="Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#b45309" text-anchor="middle">⑤ 先调用 StoragePlugin.create() 持久化</text>
+  <text x="475" y="374" font-family="Arial, sans-serif" font-size="11.5" fill="#334155" text-anchor="middle">⑥ 成功 → timeWheel.add()</text>
+  <text x="475" y="392" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">⑦ 返回 messageId, PENDING</text>
+  <line x1="650" y1="335" x2="592" y2="352" stroke="#22c55e" stroke-width="2" marker-end="url(#i1-amber)"/>
+
+  <text x="20" y="418" font-family="Arial, sans-serif" font-size="11.5" fill="#c0392b">必须按顺序执行：先持久化，再加入内存时间轮，最后返回业务方。这是避免消息丢失的第一道保障。</text>
+</svg>

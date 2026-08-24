@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 350" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="350" fill="#ffffff"/>
+  <defs>
+    <marker id="m1-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="m1-grey" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　管理台经 admin HTTP API 和 When 通信，独立部署、不耦合</text>
+
+  <!-- console -->
+  <rect x="30" y="90" width="200" height="110" rx="10" fill="#e0e7ff" stroke="#6366f1" stroke-width="2.2"/>
+  <text x="130" y="120" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#4338ca" text-anchor="middle">Web 管理台</text>
+  <text x="130" y="144" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">Vue3 + Element Plus</text>
+  <text x="130" y="164" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">编译成静态文件</text>
+  <text x="130" y="184" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">Nginx/CDN/对象存储</text>
+
+  <!-- admin http layer -->
+  <rect x="330" y="80" width="200" height="130" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="430" y="108" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#b45309" text-anchor="middle">admin HTTP API</text>
+  <text x="430" y="130" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">Spring Boot + Spring MVC</text>
+  <text x="430" y="152" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">OpenAPI 生成接口与 DTO</text>
+  <text x="430" y="172" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">统一响应 / 错误码 / Request ID</text>
+  <text x="430" y="194" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">薄协议层，不承载业务规则</text>
+
+  <!-- when cluster -->
+  <rect x="630" y="70" width="200" height="150" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="730" y="98" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#15803d" text-anchor="middle">When 集群</text>
+  <text x="648" y="124" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">gRPC 接入（40/45）</text>
+  <text x="648" y="146" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">ETCD 时间轮元数据（42）</text>
+  <text x="648" y="168" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">Controller 创建时间轮（48）</text>
+  <text x="648" y="190" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">Metrics / Trace / Logs（50）</text>
+
+  <line x1="230" y1="145" x2="328" y2="145" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#m1-amber)"/>
+  <text x="238" y="136" font-family="Arial, sans-serif" font-size="10" fill="#b45309">HTTP/JSON</text>
+  <line x1="530" y1="145" x2="628" y2="145" stroke="#94a3b8" stroke-width="2" marker-end="url(#m1-grey)"/>
+  <text x="540" y="136" font-family="Arial, sans-serif" font-size="10" fill="#64748b">内部调用</text>
+
+  <text x="20" y="255" font-family="Arial, sans-serif" font-size="12" fill="#334155">管理台是独立 Web 应用，通过 HTTP API 与 When 通信，可以和服务端分开部署。</text>
+  <text x="20" y="279" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">业务方调用 /api/v1；管理台只调用可信内网中的 /admin/v1，二者共用响应与错误契约。</text>
+  <text x="20" y="301" font-family="Arial, sans-serif" font-size="11.5" fill="#94a3b8">跨域用 CORS 或反向代理；管理台只依赖 API，不依赖 When 内部实现。</text>
+</svg>
