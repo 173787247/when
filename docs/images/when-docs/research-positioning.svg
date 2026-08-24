@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 430">
+  <rect width="860" height="430" fill="#fff"/>
+  <g font-family="Arial,'PingFang SC',sans-serif">
+    <text x="20" y="30" font-size="15" font-weight="700" fill="#334155">When 的位置：跨语言、跨下游、可私有部署的独立延时平面</text>
+    <path d="M105 355V70M105 355H805" stroke="#64748b" stroke-width="1.8"/>
+    <text x="65" y="78" font-size="11" fill="#64748b" transform="rotate(-90 65 78)">基础设施独立性</text><text x="693" y="390" font-size="11" fill="#64748b">下游与语言解耦程度</text>
+    <g font-size="12" text-anchor="middle"><rect x="145" y="276" width="130" height="54" rx="9" fill="#f1f5f9" stroke="#94a3b8"/><text x="210" y="300" fill="#334155">数据库轮询</text><text x="210" y="318" font-size="10.5" fill="#64748b">简单 · 业务内</text><rect x="290" y="230" width="130" height="54" rx="9" fill="#f1f5f9" stroke="#94a3b8"/><text x="355" y="254" fill="#334155">Redis / SDK</text><text x="355" y="272" font-size="10.5" fill="#64748b">语言与应用绑定</text><rect x="435" y="255" width="130" height="54" rx="9" fill="#dbeafe" stroke="#3b82f6"/><text x="500" y="279" fill="#1d4ed8">MQ 延时能力</text><text x="500" y="297" font-size="10.5" fill="#64748b">绑定中间件</text><rect x="575" y="170" width="140" height="54" rx="9" fill="#dbeafe" stroke="#3b82f6"/><text x="645" y="194" fill="#1d4ed8">云托管调度</text><text x="645" y="212" font-size="10.5" fill="#64748b">免运维 · 云绑定</text></g>
+    <rect x="570" y="78" width="195" height="72" rx="12" fill="#fef3c7" stroke="#f59e0b" stroke-width="3"/>
+    <text x="668" y="106" text-anchor="middle" font-size="15" font-weight="700" fill="#b45309">When</text><text x="668" y="127" text-anchor="middle" font-size="11.5" fill="#475569">HTTP 接入 · Sink 插件 · 私有部署</text>
+    <line x1="570" y1="150" x2="500" y2="255" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5 5"/>
+    <text x="125" y="372" font-size="10.5" fill="#94a3b8">应用内</text><text x="755" y="372" font-size="10.5" fill="#94a3b8">平台化</text>
+  </g>
+</svg>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 340" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="340" fill="#ffffff"/>
+  <defs>
+    <marker id="p1-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　公共契约（第 39 节）是所有模块的共同上游，各节引用它、不重造</text>
+
+  <!-- 公共契约 banner -->
+  <rect x="230" y="60" width="400" height="66" rx="11" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="430" y="88" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#b45309" text-anchor="middle">第 39 节 公共契约：领域模型 Message + 模块间 SPI</text>
+  <text x="430" y="110" font-family="Arial, sans-serif" font-size="12" fill="#64748b" text-anchor="middle">Message · Sink · StoragePlugin · TimeWheel · Router · SinkConfig</text>
+
+  <!-- module nodes -->
+  <g font-family="Arial, sans-serif">
+    <rect x="30"  y="220" width="145" height="70" rx="9" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+    <text x="102" y="250" font-size="12.5" font-weight="bold" fill="#4338ca" text-anchor="middle">40 gRPC 契约</text>
+    <text x="102" y="270" font-size="10.5" fill="#64748b" text-anchor="middle">用 Message/SinkConfig</text>
+
+    <rect x="195" y="220" width="145" height="70" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+    <text x="267" y="250" font-size="12.5" font-weight="bold" fill="#15803d" text-anchor="middle">41 存储</text>
+    <text x="267" y="270" font-size="10.5" fill="#64748b" text-anchor="middle">实现 StoragePlugin</text>
+
+    <rect x="360" y="220" width="145" height="70" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+    <text x="432" y="250" font-size="12.5" font-weight="bold" fill="#b45309" text-anchor="middle">44 时间轮</text>
+    <text x="432" y="270" font-size="10.5" fill="#64748b" text-anchor="middle">实现 TimeWheel</text>
+
+    <rect x="525" y="220" width="145" height="70" rx="9" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+    <text x="597" y="250" font-size="12.5" font-weight="bold" fill="#4338ca" text-anchor="middle">45 接入/路由</text>
+    <text x="597" y="270" font-size="10.5" fill="#64748b" text-anchor="middle">实现 Router</text>
+
+    <rect x="690" y="220" width="145" height="70" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+    <text x="762" y="250" font-size="12.5" font-weight="bold" fill="#15803d" text-anchor="middle">Sink 投递</text>
+    <text x="762" y="270" font-size="10.5" fill="#64748b" text-anchor="middle">实现 Sink</text>
+  </g>
+
+  <!-- arrows from banner to each module -->
+  <line x1="430" y1="126" x2="102" y2="218" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#p1-amber)"/>
+  <line x1="430" y1="126" x2="267" y2="218" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#p1-amber)"/>
+  <line x1="430" y1="126" x2="432" y2="218" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#p1-amber)"/>
+  <line x1="430" y1="126" x2="597" y2="218" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#p1-amber)"/>
+  <line x1="430" y1="126" x2="762" y2="218" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#p1-amber)"/>
+
+  <text x="20" y="322" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">每个模块只引用公共契约里的模型与接口，互不依赖对方的具体实现 —— 产出的代码才能完成集成。</text>
+</svg>

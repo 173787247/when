@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="380" fill="#ffffff"/>
+  <defs>
+    <marker id="c1-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="c1-grey" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　Controller = 集群决策组件：被动响应事件，做时间轮分布决策</text>
+
+  <!-- controller center -->
+  <rect x="330" y="150" width="200" height="90" rx="11" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="430" y="182" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#b45309" text-anchor="middle">Controller</text>
+  <text x="430" y="204" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">集群里一台节点兼任</text>
+  <text x="430" y="222" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">选举见第 43 节</text>
+
+  <!-- inputs (events) -->
+  <rect x="30" y="70" width="220" height="46" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="140" y="98" font-family="Arial, sans-serif" font-size="11.5" fill="#1d4ed8" text-anchor="middle">节点加入 / 下线（Watch）</text>
+  <rect x="30" y="128" width="220" height="46" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="140" y="156" font-family="Arial, sans-serif" font-size="11.5" fill="#1d4ed8" text-anchor="middle">Master 故障（DELETE）</text>
+  <rect x="30" y="186" width="220" height="46" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="140" y="214" font-family="Arial, sans-serif" font-size="11.5" fill="#1d4ed8" text-anchor="middle">out-of-sync 标记</text>
+  <rect x="30" y="244" width="220" height="46" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="140" y="272" font-family="Arial, sans-serif" font-size="11.5" fill="#1d4ed8" text-anchor="middle">定期负载检查（5 min）</text>
+
+  <line x1="250" y1="93"  x2="328" y2="175" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#c1-grey)"/>
+  <line x1="250" y1="151" x2="328" y2="185" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#c1-grey)"/>
+  <line x1="250" y1="209" x2="328" y2="200" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#c1-grey)"/>
+  <line x1="250" y1="267" x2="328" y2="215" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#c1-grey)"/>
+
+  <!-- outputs (decisions) -->
+  <rect x="610" y="80" width="225" height="46" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="722" y="108" font-family="Arial, sans-serif" font-size="11.5" fill="#15803d" text-anchor="middle">提升 Slave → 新 Master（第 47 节执行）</text>
+  <rect x="610" y="138" width="225" height="46" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="722" y="166" font-family="Arial, sans-serif" font-size="11.5" fill="#15803d" text-anchor="middle">rebalance：时间轮重分布</text>
+  <rect x="610" y="196" width="225" height="46" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="722" y="224" font-family="Arial, sans-serif" font-size="11.5" fill="#15803d" text-anchor="middle">分配 / 重建 Slave</text>
+  <rect x="610" y="254" width="225" height="46" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="722" y="282" font-family="Arial, sans-serif" font-size="11.5" fill="#15803d" text-anchor="middle">写回 ETCD 时间轮元数据</text>
+
+  <line x1="530" y1="180" x2="608" y2="103" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#c1-amber)"/>
+  <line x1="530" y1="188" x2="608" y2="161" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#c1-amber)"/>
+  <line x1="530" y1="205" x2="608" y2="219" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#c1-amber)"/>
+  <line x1="530" y1="215" x2="608" y2="277" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#c1-amber)"/>
+
+  <text x="140" y="330" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#334155">输入：事件</text>
+  <text x="722" y="330" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#334155" text-anchor="middle">输出：决策（执行交第 47 节）</text>
+  <text x="20" y="360" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">Controller 只做“决策”，不亲自搬数据；提升 / 重建 / 迁移的“执行”由第 47 节的 FailoverExecutor 完成。</text>
+</svg>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 340" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="340" fill="#ffffff"/>
+  <defs>
+    <marker id="j2-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="j2-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#c0392b"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　停止 Master，验证 10 秒内接管并恢复已持久化消息</text>
+
+  <rect x="30" y="80" width="185" height="70" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="122" y="108" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#15803d" text-anchor="middle">发 100 条延时消息</text>
+  <text x="122" y="130" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">SDK 提交，都落库</text>
+
+  <rect x="260" y="80" width="185" height="70" rx="10" fill="#fdecea" stroke="#c0392b" stroke-width="2.2"/>
+  <text x="352" y="108" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c0392b" text-anchor="middle">到期前停止 Master 节点</text>
+  <text x="352" y="130" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">停进程 / 停容器 / 删 Pod</text>
+
+  <rect x="490" y="80" width="185" height="70" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+  <text x="582" y="104" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#b45309" text-anchor="middle">10 秒内 Slave 接管</text>
+  <text x="582" y="126" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">从 Redis 恢复补齐</text>
+  <text x="582" y="142" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">指标 failover_total +1</text>
+
+  <rect x="705" y="80" width="130" height="70" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="2.2"/>
+  <text x="770" y="108" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#15803d" text-anchor="middle">100 条全投</text>
+  <text x="770" y="130" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">一条不丢</text>
+
+  <line x1="215" y1="115" x2="258" y2="115" stroke="#c0392b" stroke-width="2.2" marker-end="url(#j2-red)"/>
+  <line x1="445" y1="115" x2="488" y2="115" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#j2-amber)"/>
+  <line x1="675" y1="115" x2="703" y2="115" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#j2-amber)"/>
+
+  <rect x="30" y="200" width="805" height="110" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="48" y="226" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#334155">每个结论都要留下可追溯证据：</text>
+  <text x="48" y="250" font-family="Arial, sans-serif" font-size="11" fill="#334155">· 分配与节点：故障节点消失，时间轮 Master 切到原 Slave，term / revision 向前推进</text>
+  <text x="48" y="272" font-family="Arial, sans-serif" font-size="11" fill="#334155">· 观测：failover 指标、Trace 时间线、同 trace_id 日志和 readiness 状态能相互印证</text>
+  <text x="48" y="294" font-family="Arial, sans-serif" font-size="11" fill="#334155">· 结果：100 条全部进入终态；重复数、丢失数和接管耗时写入集成测试报告</text>
+</svg>

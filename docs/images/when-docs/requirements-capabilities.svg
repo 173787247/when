@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 440">
+  <rect width="860" height="440" fill="#fff"/>
+  <g font-family="Arial,'PingFang SC',sans-serif">
+    <text x="20" y="30" font-size="15" font-weight="700" fill="#334155">When MVP 能力地图：从“能延时”到“能在故障中继续交付”</text>
+    <rect x="305" y="62" width="250" height="68" rx="12" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.8"/><text x="430" y="91" text-anchor="middle" font-size="16" font-weight="700" fill="#b45309">分布式延时投递</text><text x="430" y="114" text-anchor="middle" font-size="11.5" fill="#475569">1 秒～30 天 · 至少一次</text>
+    <g font-size="12" text-anchor="middle">
+      <rect x="35" y="175" width="180" height="78" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/><text x="125" y="202" font-weight="700" fill="#1d4ed8">业务能力</text><text x="125" y="222" fill="#475569">提交 · 查询 · 取消</text><text x="125" y="240" fill="#475569">HTTP / Kafka Sink</text>
+      <rect x="235" y="175" width="180" height="78" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/><text x="325" y="202" font-weight="700" fill="#b45309">调度与存储</text><text x="325" y="222" fill="#475569">多层时间轮</text><text x="325" y="240" fill="#475569">Redis 可靠恢复</text>
+      <rect x="435" y="175" width="180" height="78" rx="10" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/><text x="525" y="202" font-weight="700" fill="#b91c1c">高可用</text><text x="525" y="222" fill="#475569">1 Master + 1 Slave</text><text x="525" y="240" fill="#475569">10 秒内自动接管</text>
+      <rect x="635" y="175" width="190" height="78" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/><text x="730" y="202" font-weight="700" fill="#15803d">运维交付</text><text x="730" y="222" fill="#475569">Metrics · 日志 · 管理台</text><text x="730" y="240" fill="#475569">Compose · K8s · CI</text>
+    </g>
+    <path d="M430 130V154H125V175M430 154H325V175M430 154H525V175M430 154H730V175" fill="none" stroke="#94a3b8" stroke-width="1.8"/>
+    <rect x="95" y="310" width="670" height="82" rx="12" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="430" y="338" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">统一验收</text><text x="430" y="360" text-anchor="middle" font-size="12" fill="#475569">三节点一键启动 · 真投递 · 杀 Master · 100 条不丢 · 指标/日志/页面可证明</text><text x="430" y="379" text-anchor="middle" font-size="11" fill="#64748b">允许故障窗口内少量重复，下游以 message_id 幂等</text>
+  </g>
+</svg>

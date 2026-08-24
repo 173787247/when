@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="400" fill="#ffffff"/>
+  <defs>
+    <marker id="arrow-blue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#3b82f6"/></marker>
+    <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　每个逻辑时间轮拥有独立的 Timer、执行器和索引</text>
+
+  <g font-family="Arial, sans-serif">
+    <rect x="28" y="66" width="232" height="240" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="46" y="94" font-size="13" font-weight="bold" fill="#1d4ed8">tw-a</text>
+    <rect x="46" y="112" width="196" height="48" rx="7" fill="#dbeafe" stroke="#60a5fa"/>
+    <text x="60" y="141" font-size="11.5" fill="#334155">HashedWheelTimer A</text>
+    <rect x="46" y="176" width="196" height="48" rx="7" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="60" y="205" font-size="11.5" fill="#334155">独立 Timeout 索引 A</text>
+    <rect x="46" y="240" width="196" height="48" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="60" y="269" font-size="11.5" fill="#92400e">有界 dueExecutor A</text>
+
+    <rect x="314" y="66" width="232" height="240" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="332" y="94" font-size="13" font-weight="bold" fill="#1d4ed8">tw-b</text>
+    <rect x="332" y="112" width="196" height="48" rx="7" fill="#dbeafe" stroke="#60a5fa"/>
+    <text x="346" y="141" font-size="11.5" fill="#334155">HashedWheelTimer B</text>
+    <rect x="332" y="176" width="196" height="48" rx="7" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="346" y="205" font-size="11.5" fill="#334155">独立 Timeout 索引 B</text>
+    <rect x="332" y="240" width="196" height="48" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="346" y="269" font-size="11.5" fill="#92400e">有界 dueExecutor B</text>
+
+    <rect x="600" y="66" width="232" height="240" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+    <text x="618" y="94" font-size="13" font-weight="bold" fill="#1d4ed8">tw-c</text>
+    <rect x="618" y="112" width="196" height="48" rx="7" fill="#dbeafe" stroke="#60a5fa"/>
+    <text x="632" y="141" font-size="11.5" fill="#334155">HashedWheelTimer C</text>
+    <rect x="618" y="176" width="196" height="48" rx="7" fill="#ffffff" stroke="#93c5fd"/>
+    <text x="632" y="205" font-size="11.5" fill="#334155">独立 Timeout 索引 C</text>
+    <rect x="618" y="240" width="196" height="48" rx="7" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="632" y="269" font-size="11.5" fill="#92400e">有界 dueExecutor C</text>
+  </g>
+
+  <line x1="144" y1="160" x2="144" y2="176" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <line x1="144" y1="224" x2="144" y2="240" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-amber)"/>
+  <line x1="430" y1="160" x2="430" y2="176" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <line x1="430" y1="224" x2="430" y2="240" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-amber)"/>
+  <line x1="716" y1="160" x2="716" y2="176" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <line x1="716" y1="224" x2="716" y2="240" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-amber)"/>
+
+  <text x="20" y="340" font-family="Arial, sans-serif" font-size="12" fill="#334155">一个 tw_id 积压时，不共享它的 Timer 工作线程、Timeout 索引或到期执行队列；可按 tw_id 独立启动、停止和重建。</text>
+  <text x="20" y="366" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">隔离边界仍在同一 JVM 内：CPU、内存、GC、Redis 和网络资源共享，因此单节点时间轮数量必须设安全上限。</text>
+</svg>

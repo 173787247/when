@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 400">
+  <rect width="860" height="400" fill="#fff"/>
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#f59e0b"/></marker></defs>
+  <g font-family="Arial,'PingFang SC',sans-serif">
+    <text x="20" y="30" font-size="15" font-weight="700" fill="#334155">延时投递的问题空间：难点不在等待，而在可靠地跨过等待期</text>
+    <rect x="35" y="72" width="145" height="70" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="108" y="101" text-anchor="middle" font-size="13" font-weight="700" fill="#1d4ed8">业务提交</text><text x="108" y="122" text-anchor="middle" font-size="11" fill="#475569">消息 + 到期时间 + Sink</text>
+    <path d="M180 107H240" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#a)"/>
+    <rect x="250" y="72" width="145" height="70" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+    <text x="323" y="101" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">可靠等待</text><text x="323" y="122" text-anchor="middle" font-size="11" fill="#475569">秒级到 30 天</text>
+    <path d="M395 107H455" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#a)"/>
+    <rect x="465" y="72" width="145" height="70" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+    <text x="538" y="101" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">到期触发</text><text x="538" y="122" text-anchor="middle" font-size="11" fill="#475569">精度 + 大规模积压</text>
+    <path d="M610 107H670" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#a)"/>
+    <rect x="680" y="72" width="145" height="70" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+    <text x="753" y="101" text-anchor="middle" font-size="13" font-weight="700" fill="#15803d">目标收到</text><text x="753" y="122" text-anchor="middle" font-size="11" fill="#475569">HTTP / Kafka / …</text>
+    <text x="35" y="190" font-size="12" font-weight="700" fill="#64748b">等待期必须同时解决</text>
+    <g font-size="12" text-anchor="middle"><rect x="35" y="215" width="145" height="48" rx="8" fill="#f8fafc" stroke="#94a3b8"/><text x="108" y="244" fill="#334155">持久化与恢复</text><rect x="195" y="215" width="145" height="48" rx="8" fill="#f8fafc" stroke="#94a3b8"/><text x="268" y="244" fill="#334155">分片与扩缩容</text><rect x="355" y="215" width="145" height="48" rx="8" fill="#f8fafc" stroke="#94a3b8"/><text x="428" y="244" fill="#334155">故障切换</text><rect x="515" y="215" width="145" height="48" rx="8" fill="#f8fafc" stroke="#94a3b8"/><text x="588" y="244" fill="#334155">重试与幂等</text><rect x="675" y="215" width="150" height="48" rx="8" fill="#f8fafc" stroke="#94a3b8"/><text x="750" y="244" fill="#334155">观测与运维</text></g>
+    <rect x="120" y="305" width="620" height="58" rx="12" fill="#fff7ed" stroke="#f59e0b" stroke-width="2"/>
+    <text x="430" y="330" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">独立延时服务的价值</text><text x="430" y="350" text-anchor="middle" font-size="12" fill="#475569">把这些复杂度从每个业务应用中抽出来，由统一基础设施承担</text>
+  </g>
+</svg>

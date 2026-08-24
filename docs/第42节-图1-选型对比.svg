@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 320" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="320" fill="#ffffff"/>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　元数据协调选型：为什么选 ETCD</text>
+
+  <!-- ZK -->
+  <rect x="25" y="60" width="255" height="210" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <text x="152" y="88" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#475569" text-anchor="middle">ZooKeeper</text>
+  <line x1="45" y1="100" x2="260" y2="100" stroke="#e2e8f0" stroke-width="1.4"/>
+  <text x="42" y="126" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">＋ 老牌、生态完整</text>
+  <text x="42" y="150" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">＋ Kafka/Pulsar 都用过</text>
+  <text x="42" y="182" font-family="Arial, sans-serif" font-size="11.5" fill="#b91c1c">－ API 偏底层、客户端复杂</text>
+  <text x="42" y="206" font-family="Arial, sans-serif" font-size="11.5" fill="#b91c1c">－ 运维心智负担大</text>
+
+  <!-- ETCD (chosen) -->
+  <rect x="300" y="50" width="255" height="230" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="427" y="80" font-family="Arial, sans-serif" font-size="14.5" font-weight="bold" fill="#b45309" text-anchor="middle">ETCD　✓ 选它</text>
+  <line x1="320" y1="92" x2="535" y2="92" stroke="#f1d9a0" stroke-width="1.4"/>
+  <text x="318" y="118" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">＋ 云原生事实标准（K8s 核心）</text>
+  <text x="318" y="142" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">＋ API 简洁：Put/Get/Watch/Lease</text>
+  <text x="318" y="166" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">＋ 客户端轻、Raft 内建强一致</text>
+  <text x="318" y="190" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">＋ 跑 K8s 的环境基本都有</text>
+  <text x="318" y="222" font-family="Arial, sans-serif" font-size="11.5" fill="#15803d">→ 运维心智最轻，不必额外引组件</text>
+  <text x="318" y="250" font-family="Arial, sans-serif" font-size="11" fill="#64748b">Lease/Watch 天然适配注册与切换</text>
+
+  <!-- Consul -->
+  <rect x="575" y="60" width="260" height="210" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <text x="705" y="88" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#475569" text-anchor="middle">Consul</text>
+  <line x1="595" y1="100" x2="815" y2="100" stroke="#e2e8f0" stroke-width="1.4"/>
+  <text x="592" y="126" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">＋ 服务发现强</text>
+  <text x="592" y="158" font-family="Arial, sans-serif" font-size="11.5" fill="#b91c1c">－ 偏服务发现场景</text>
+  <text x="592" y="182" font-family="Arial, sans-serif" font-size="11.5" fill="#b91c1c">－ 分布式协调语义</text>
+  <text x="592" y="204" font-family="Arial, sans-serif" font-size="11.5" fill="#b91c1c">　 不如 ETCD 直接</text>
+
+  <text x="20" y="302" font-family="Arial, sans-serif" font-size="12" fill="#64748b">结论：选 ETCD 是顺应云原生趋势 + 让 When 用户的运维心智最轻（技术方案 §2.1）。</text>
+</svg>

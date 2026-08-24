@@ -1,0 +1,5 @@
+when:
+  admin:
+    # MVP admin endpoints are for trusted networks only. Configure explicit origins in production.
+    allowed-origins: ${WHEN_ADMIN_ALLOWED_ORIGINS:http://localhost:5173}
+    index-repair-interval: ${WHEN_ADMIN_INDEX_REPAIR_INTERVAL:PT1M}

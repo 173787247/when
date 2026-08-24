@@ -1,0 +1,427 @@
+openapi: 3.0.3
+info:
+  title: When HTTP API
+  version: 1.0.0
+  description: Business and trusted-network administration API for When.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Business
+  - name: Admin
+paths:
+  /api/v1/messages:
+    post:
+      tags: [Business]
+      operationId: submitMessage
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SubmitMessageRequest'}
+      responses:
+        '201':
+          description: Persisted message
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/RequestId'}
+            Location:
+              schema: {type: string}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SubmitMessageEnvelope'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /api/v1/messages/{id}:
+    parameters:
+      - $ref: '#/components/parameters/MessageId'
+      - $ref: '#/components/parameters/RequestId'
+    get:
+      tags: [Business]
+      operationId: queryMessage
+      responses:
+        '200':
+          description: Message state
+          headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MessageEnvelope'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    delete:
+      tags: [Business]
+      operationId: cancelMessage
+      responses:
+        '200':
+          description: Cancellation state
+          headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CancelMessageEnvelope'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /admin/v1/timewheels:
+    get:
+      tags: [Admin]
+      operationId: listTimeWheels
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Time-wheel assignments
+          headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/TimeWheelListEnvelope'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+    post:
+      tags: [Admin]
+      operationId: createTimeWheels
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateTimeWheelsRequest'}
+      responses:
+        '201':
+          description: Created assignments
+          headers:
+            X-Request-Id: {$ref: '#/components/headers/RequestId'}
+            Idempotency-Replayed:
+              schema: {type: boolean}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CreateTimeWheelsEnvelope'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /admin/v1/messages:
+    get:
+      tags: [Admin]
+      operationId: listMessages
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/MessageStatus'}}
+        - {name: tag, in: query, schema: {type: string, maxLength: 128}}
+        - {name: sink_type, in: query, schema: {$ref: '#/components/schemas/SinkType'}}
+        - {name: from, in: query, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: to, in: query, schema: {type: integer, format: int64, minimum: 0}}
+        - {name: cursor, in: query, schema: {type: string, maxLength: 2048}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}
+      responses:
+        '200':
+          description: Bounded cursor page
+          headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MessagePageEnvelope'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /admin/v1/messages/{id}:
+    get:
+      tags: [Admin]
+      operationId: getMessageDetails
+      parameters:
+        - $ref: '#/components/parameters/MessageId'
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Safe message details and bounded attempt history
+          headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MessageDetailsEnvelope'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /admin/v1/cluster/nodes:
+    get:
+      tags: [Admin]
+      operationId: listClusterNodes
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      responses:
+        '200':
+          description: Cluster members
+          headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ClusterNodeListEnvelope'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+components:
+  parameters:
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      schema: {type: string, pattern: '^[A-Za-z0-9._-]{1,64}$'}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, pattern: '^[A-Za-z0-9._-]{1,128}$'}
+    MessageId:
+      name: id
+      in: path
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 128}
+  headers:
+    RequestId:
+      schema: {type: string, pattern: '^[A-Za-z0-9._-]{1,64}$'}
+  responses:
+    BadRequest:
+      description: Invalid request
+      headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErrorEnvelope'}}}
+    NotFound:
+      description: Resource not found
+      headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErrorEnvelope'}}}
+    Conflict:
+      description: Current state or idempotency conflict
+      headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErrorEnvelope'}}}
+    Unavailable:
+      description: Required dependency is unavailable
+      headers: {X-Request-Id: {$ref: '#/components/headers/RequestId'}}
+      content: {application/json: {schema: {$ref: '#/components/schemas/ErrorEnvelope'}}}
+  schemas:
+    MessageStatus:
+      type: string
+      enum: [PENDING, DELIVERING, DELIVERED, FAILED, CANCELLED]
+    SinkType:
+      type: string
+      enum: [HTTP, KAFKA, FILE]
+    HttpSinkConfig:
+      type: object
+      additionalProperties: false
+      required: [url]
+      properties:
+        url: {type: string, format: uri, maxLength: 2048}
+        method: {type: string, default: POST, enum: [POST, PUT, PATCH]}
+        headers: {type: object, additionalProperties: {type: string}}
+        timeout_ms: {type: integer, minimum: 1, maximum: 30000, default: 5000}
+    KafkaSinkConfig:
+      type: object
+      additionalProperties: false
+      required: [bootstrap_servers, topic]
+      properties:
+        bootstrap_servers: {type: string, minLength: 1, maxLength: 2048}
+        topic: {type: string, minLength: 1, maxLength: 249}
+        key: {type: string, maxLength: 1024}
+        headers: {type: object, additionalProperties: {type: string}}
+    FileSinkConfig:
+      type: object
+      additionalProperties: false
+      required: [path]
+      properties:
+        path:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          description: Relative path below the node's WHEN_FILE_SINK_BASE_DIR.
+    SinkConfig:
+      type: object
+      additionalProperties: false
+      properties:
+        http: {$ref: '#/components/schemas/HttpSinkConfig'}
+        kafka: {$ref: '#/components/schemas/KafkaSinkConfig'}
+        file: {$ref: '#/components/schemas/FileSinkConfig'}
+      oneOf:
+        - required: [http]
+        - required: [kafka]
+        - required: [file]
+    SubmitMessageRequest:
+      type: object
+      additionalProperties: false
+      required: [sink_type, sink_config]
+      properties:
+        deliver_at: {type: integer, format: int64}
+        delay_seconds: {type: integer, format: int64, minimum: 1, maximum: 2592000}
+        sink_type: {$ref: '#/components/schemas/SinkType'}
+        sink_config: {$ref: '#/components/schemas/SinkConfig'}
+        payload: {type: string, format: byte, maxLength: 87384}
+        business_tag: {type: string, maxLength: 128}
+      oneOf:
+        - required: [deliver_at]
+        - required: [delay_seconds]
+    CreateTimeWheelsRequest:
+      type: object
+      additionalProperties: false
+      required: [count]
+      properties:
+        count: {type: integer, minimum: 1, maximum: 100}
+    SubmitMessageData:
+      type: object
+      required: [message_id, status, created_at]
+      properties:
+        message_id: {type: string}
+        status: {$ref: '#/components/schemas/MessageStatus'}
+        created_at: {type: integer, format: int64}
+    CancelMessageData:
+      type: object
+      required: [message_id, status, canceled_at]
+      properties:
+        message_id: {type: string}
+        status: {$ref: '#/components/schemas/MessageStatus'}
+        canceled_at: {type: integer, format: int64}
+    MessageSummary:
+      type: object
+      required: [message_id, status, created_at, deliver_at, sink_type, retry_count]
+      properties:
+        message_id: {type: string}
+        status: {$ref: '#/components/schemas/MessageStatus'}
+        created_at: {type: integer, format: int64}
+        deliver_at: {type: integer, format: int64}
+        delivered_at: {type: integer, format: int64}
+        sink_type: {$ref: '#/components/schemas/SinkType'}
+        business_tag: {type: string, nullable: true}
+        retry_count: {type: integer, minimum: 0}
+        last_error: {type: string, nullable: true, maxLength: 512}
+    DeliveryAttempt:
+      type: object
+      required: [attempt_id, started_at, finished_at, result, duration_ms]
+      properties:
+        attempt_id: {type: string}
+        started_at: {type: integer, format: int64}
+        finished_at: {type: integer, format: int64}
+        result: {type: string, enum: [SUCCESS, RETRYABLE_FAILURE, TERMINAL_FAILURE]}
+        error_code: {type: string, nullable: true}
+        error_summary: {type: string, nullable: true, maxLength: 256}
+        duration_ms: {type: integer, format: int64, minimum: 0}
+    MessageDetails:
+      allOf:
+        - $ref: '#/components/schemas/MessageSummary'
+        - type: object
+          required: [attempts]
+          properties:
+            attempts: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/DeliveryAttempt'}}
+    TimeWheel:
+      type: object
+      required: [tw_id, master, slave, status, sync_state, assignment_version, message_count]
+      properties:
+        tw_id: {type: string}
+        master: {type: string}
+        slave: {type: string}
+        status: {type: string}
+        sync_state: {type: string}
+        assignment_version: {type: integer, format: int64, minimum: 0}
+        message_count: {type: integer, format: int64, minimum: 0}
+    ClusterNode:
+      type: object
+      required: [node_id, host, grpc_port, start_time, load, ready, controller]
+      properties:
+        node_id: {type: string}
+        host: {type: string}
+        grpc_port: {type: integer}
+        start_time: {type: integer, format: int64}
+        load: {type: number, format: double, minimum: 0}
+        ready: {type: boolean}
+        controller: {type: boolean}
+    TimeWheelListData:
+      type: object
+      required: [items]
+      properties: {items: {type: array, items: {$ref: '#/components/schemas/TimeWheel'}}}
+    CreateTimeWheelsData:
+      type: object
+      required: [created, assignments]
+      properties:
+        created: {type: array, items: {type: string}}
+        assignments: {type: array, items: {$ref: '#/components/schemas/TimeWheel'}}
+    MessagePageData:
+      type: object
+      required: [items, has_more, index_updated_at]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/MessageSummary'}}
+        next_cursor: {type: string, nullable: true}
+        has_more: {type: boolean}
+        index_updated_at: {type: integer, format: int64}
+    ClusterNodeListData:
+      type: object
+      required: [items]
+      properties: {items: {type: array, items: {$ref: '#/components/schemas/ClusterNode'}}}
+    ErrorData:
+      type: object
+      additionalProperties: false
+      properties:
+        field: {type: string}
+        max_range_days: {type: integer}
+    SubmitMessageEnvelope:
+      $ref: '#/components/schemas/SubmitEnvelopeObject'
+    SubmitEnvelopeObject:
+      type: object
+      required: [code, message, request_id, data]
+      properties:
+        code: {type: string, enum: [OK]}
+        message: {type: string}
+        request_id: {type: string}
+        data: {$ref: '#/components/schemas/SubmitMessageData'}
+    CancelMessageEnvelope:
+      type: object
+      required: [code, message, request_id, data]
+      properties:
+        code: {type: string, enum: [OK]}
+        message: {type: string}
+        request_id: {type: string}
+        data: {$ref: '#/components/schemas/CancelMessageData'}
+    MessageEnvelope:
+      type: object
+      required: [code, message, request_id, data]
+      properties:
+        code: {type: string, enum: [OK]}
+        message: {type: string}
+        request_id: {type: string}
+        data: {$ref: '#/components/schemas/MessageSummary'}
+    TimeWheelListEnvelope:
+      type: object
+      required: [code, message, request_id, data]
+      properties:
+        code: {type: string, enum: [OK]}
+        message: {type: string}
+        request_id: {type: string}
+        data: {$ref: '#/components/schemas/TimeWheelListData'}
+    CreateTimeWheelsEnvelope:
+      type: object
+      required: [code, message, request_id, data]
+      properties:
+        code: {type: string, enum: [OK]}
+        message: {type: string}
+        request_id: {type: string}
+        data: {$ref: '#/components/schemas/CreateTimeWheelsData'}
+    MessagePageEnvelope:
+      type: object
+      required: [code, message, request_id, data]
+      properties:
+        code: {type: string, enum: [OK]}
+        message: {type: string}
+        request_id: {type: string}
+        data: {$ref: '#/components/schemas/MessagePageData'}
+    MessageDetailsEnvelope:
+      type: object
+      required: [code, message, request_id, data]
+      properties:
+        code: {type: string, enum: [OK]}
+        message: {type: string}
+        request_id: {type: string}
+        data: {$ref: '#/components/schemas/MessageDetails'}
+    ClusterNodeListEnvelope:
+      type: object
+      required: [code, message, request_id, data]
+      properties:
+        code: {type: string, enum: [OK]}
+        message: {type: string}
+        request_id: {type: string}
+        data: {$ref: '#/components/schemas/ClusterNodeListData'}
+    ErrorEnvelope:
+      type: object
+      required: [code, message, request_id]
+      properties:
+        code:
+          type: string
+          enum: [INVALID_ARGUMENT, INVALID_JSON, INVALID_TIME_RANGE, INVALID_CURSOR, MESSAGE_NOT_FOUND, TIMEWHEEL_NOT_FOUND, MESSAGE_STATE_CONFLICT, IDEMPOTENCY_KEY_CONFLICT, TIMEWHEEL_OPERATION_CONFLICT, NODE_NOT_READY, REDIS_UNAVAILABLE, ETCD_UNAVAILABLE, CONTROLLER_UNAVAILABLE, INTERNAL_ERROR]
+        message: {type: string}
+        request_id: {type: string}
+        data: {$ref: '#/components/schemas/ErrorData', nullable: true}

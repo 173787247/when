@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 430">
+  <rect width="860" height="430" fill="#fff"/>
+  <defs><marker id="a" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0 0L8 3L0 6Z" fill="#f59e0b"/></marker></defs>
+  <g font-family="Arial,'PingFang SC',sans-serif">
+    <text x="20" y="30" font-size="15" font-weight="700" fill="#334155">Master 故障切换：检测、决策、恢复、接管、补副本</text>
+    <g font-size="11.5" text-anchor="middle">
+      <rect x="25" y="74" width="135" height="64" rx="9" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/><text x="93" y="99" font-weight="700" fill="#b91c1c">① Lease 过期</text><text x="93" y="120" fill="#475569">Watch DELETE</text>
+      <rect x="190" y="74" width="135" height="64" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/><text x="258" y="99" font-weight="700" fill="#b45309">② Controller</text><text x="258" y="120" fill="#475569">提升 + epoch+1</text>
+      <rect x="355" y="74" width="135" height="64" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/><text x="423" y="99" font-weight="700" fill="#1d4ed8">③ Redis 补齐</text><text x="423" y="120" fill="#475569">重建 PENDING</text>
+      <rect x="520" y="74" width="135" height="64" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/><text x="588" y="99" font-weight="700" fill="#15803d">④ 新 Master</text><text x="588" y="120" fill="#475569">开始调度</text>
+      <rect x="685" y="74" width="150" height="64" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/><text x="760" y="99" font-weight="700" fill="#1d4ed8">⑤ 新 Slave</text><text x="760" y="120" fill="#475569">异节点全量重建</text>
+    </g>
+    <g stroke="#f59e0b" stroke-width="2.2" marker-end="url(#a)"><path d="M160 106H190"/><path d="M325 106H355"/><path d="M490 106H520"/><path d="M655 106H685"/></g>
+    <rect x="90" y="205" width="300" height="92" rx="12" fill="#f8fafc" stroke="#94a3b8"/><text x="240" y="232" text-anchor="middle" font-size="13" font-weight="700" fill="#334155">快速路径：Slave 内存基本同步</text><text x="240" y="254" text-anchor="middle" font-size="11.5" fill="#475569">异步 gRPC 镜像 add/remove</text><text x="240" y="275" text-anchor="middle" font-size="11" fill="#64748b">仍先从 Redis 补齐，再接管</text>
+    <rect x="470" y="205" width="300" height="92" rx="12" fill="#fff7ed" stroke="#f59e0b"/><text x="620" y="232" text-anchor="middle" font-size="13" font-weight="700" fill="#b45309">可靠路径：Redis 是最终来源</text><text x="620" y="254" text-anchor="middle" font-size="11.5" fill="#475569">Slave 落后或 out_of_sync 也能恢复</text><text x="620" y="275" text-anchor="middle" font-size="11" fill="#64748b">优先保证不丢，不承诺精确一次</text>
+    <rect x="170" y="340" width="520" height="46" rx="9" fill="#fee2e2" stroke="#ef4444"/><text x="430" y="368" text-anchor="middle" font-size="12" fill="#b91c1c">epoch fencing 阻止恢复后的旧 Master 继续写入或投递</text>
+  </g>
+</svg>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 940 430" xmlns="http://www.w3.org/2000/svg">
+  <rect width="940" height="430" fill="#ffffff"/>
+  <defs><marker id="release-arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker></defs>
+  <text x="22" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　同一份 When 代码 → 三种制品 → 统一连接外部依赖</text>
+  <rect x="30" y="74" width="180" height="104" rx="10" fill="#eef2ff" stroke="#6366f1" stroke-width="2.2"/>
+  <text x="120" y="104" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#4338ca" text-anchor="middle">When 源码</text>
+  <text x="120" y="130" font-family="Arial, sans-serif" font-size="11" fill="#334155" text-anchor="middle">Server + Admin Web</text>
+  <text x="120" y="154" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">Maven / pnpm</text>
+  <rect x="280" y="74" width="180" height="104" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+  <text x="370" y="104" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#b45309" text-anchor="middle">Makefile</text>
+  <text x="370" y="130" font-family="Arial, sans-serif" font-size="11" fill="#334155" text-anchor="middle">verify / release / image</text>
+  <text x="370" y="154" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">同一套构建入口</text>
+  <line x1="210" y1="126" x2="278" y2="126" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#release-arrow)"/>
+  <g font-family="Arial, sans-serif">
+    <rect x="525" y="52" width="180" height="82" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="615" y="80" font-size="12.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">TGZ</text>
+    <text x="615" y="103" font-size="10.5" fill="#334155" text-anchor="middle">解压 → 配置 → bin/when start</text>
+    <text x="615" y="122" font-size="9.5" fill="#64748b" text-anchor="middle">本地 / 传统主机</text>
+    <rect x="525" y="150" width="180" height="82" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+    <text x="615" y="178" font-size="12.5" font-weight="bold" fill="#15803d" text-anchor="middle">When OCI 镜像</text>
+    <text x="615" y="201" font-size="10.5" fill="#334155" text-anchor="middle">docker run + 外部配置</text>
+    <text x="615" y="220" font-size="9.5" fill="#64748b" text-anchor="middle">只含 JRE 与 When</text>
+    <rect x="525" y="248" width="180" height="82" rx="9" fill="#fff7ed" stroke="#f59e0b" stroke-width="2"/>
+    <text x="615" y="276" font-size="12.5" font-weight="bold" fill="#b45309" text-anchor="middle">When K8s 清单</text>
+    <text x="615" y="299" font-size="10.5" fill="#334155" text-anchor="middle">StatefulSet + Service</text>
+    <text x="615" y="318" font-size="9.5" fill="#64748b" text-anchor="middle">ConfigMap / Secret 引用 / 探针</text>
+  </g>
+  <line x1="460" y1="110" x2="523" y2="92" stroke="#f59e0b" stroke-width="2" marker-end="url(#release-arrow)"/>
+  <line x1="460" y1="126" x2="523" y2="190" stroke="#f59e0b" stroke-width="2" marker-end="url(#release-arrow)"/>
+  <line x1="460" y1="142" x2="523" y2="288" stroke="#f59e0b" stroke-width="2" marker-end="url(#release-arrow)"/>
+  <rect x="758" y="88" width="158" height="218" rx="11" fill="#f8fafc" stroke="#64748b" stroke-width="2"/>
+  <text x="837" y="116" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#334155" text-anchor="middle">外部依赖</text>
+  <g font-family="Arial, sans-serif" font-size="11" fill="#334155" text-anchor="middle">
+    <text x="837" y="150">Redis</text><text x="837" y="180">ETCD</text><text x="837" y="210">Kafka（按需）</text>
+    <text x="837" y="240">HTTP 下游</text><text x="837" y="270">OTLP Collector（按需）</text>
+    <text x="837" y="294" font-size="9.5" fill="#64748b">只提供连接信息</text>
+  </g>
+  <line x1="705" y1="92" x2="756" y2="150" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#release-arrow)"/>
+  <line x1="705" y1="190" x2="756" y2="198" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#release-arrow)"/>
+  <line x1="705" y1="288" x2="756" y2="246" stroke="#94a3b8" stroke-width="1.8" marker-end="url(#release-arrow)"/>
+  <rect x="100" y="368" width="740" height="38" rx="19" fill="#fff7ed" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="470" y="392" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#b45309" text-anchor="middle">发布制品只包含 When；Redis、ETCD 等外部服务不打包、不部署、不管理</text>
+</svg>

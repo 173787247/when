@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 840 380" xmlns="http://www.w3.org/2000/svg">
+  <rect width="840" height="380" fill="#ffffff"/>
+  <defs>
+    <marker id="a-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="a-grey" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　本节产出（对外契约 + gRPC Server）在 When 里的位置</text>
+
+  <!-- 业务方 -->
+  <rect x="20" y="165" width="115" height="66" rx="9" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="77" y="195" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#4338ca" text-anchor="middle">业务方</text>
+  <text x="77" y="216" font-family="Arial, sans-serif" font-size="11" fill="#64748b" text-anchor="middle">调用方</text>
+
+  <!-- gRPC 客户端 -->
+  <rect x="170" y="165" width="130" height="66" rx="9" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <text x="235" y="192" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="middle">gRPC 客户端</text>
+  <text x="235" y="214" font-family="Arial, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">按 proto 发起请求</text>
+
+  <!-- 本模块核心大框 -->
+  <rect x="335" y="80" width="250" height="215" rx="11" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="460" y="108" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#b45309" text-anchor="middle">对外契约 + gRPC Server（本节）</text>
+  <rect x="355" y="126" width="210" height="40" rx="7" fill="#ffffff" stroke="#f59e0b" stroke-width="1.6"/>
+  <text x="460" y="151" font-family="Arial, sans-serif" font-size="12.5" fill="#b45309" text-anchor="middle">proto 是服务契约的唯一权威定义</text>
+  <rect x="355" y="180" width="210" height="30" rx="6" fill="#ffffff" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="460" y="200" font-family="Arial, sans-serif" font-size="12" fill="#334155" text-anchor="middle">发送　Submit</text>
+  <rect x="355" y="216" width="210" height="30" rx="6" fill="#ffffff" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="460" y="236" font-family="Arial, sans-serif" font-size="12" fill="#334155" text-anchor="middle">查询　Query</text>
+  <rect x="355" y="252" width="210" height="30" rx="6" fill="#ffffff" stroke="#f59e0b" stroke-width="1.4"/>
+  <text x="460" y="272" font-family="Arial, sans-serif" font-size="12" fill="#334155" text-anchor="middle">取消　Cancel</text>
+
+  <!-- 下游模块（后续节，弱化） -->
+  <rect x="620" y="150" width="200" height="96" rx="9" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <text x="720" y="184" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="middle">路由 / 时间轮 / 存储</text>
+  <text x="720" y="206" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="middle">/ Sink 投递</text>
+  <text x="720" y="228" font-family="Arial, sans-serif" font-size="11" fill="#94a3b8" text-anchor="middle">（后续各节）</text>
+
+  <!-- arrows -->
+  <line x1="135" y1="198" x2="168" y2="198" stroke="#94a3b8" stroke-width="2" marker-end="url(#a-grey)"/>
+  <line x1="300" y1="198" x2="333" y2="188" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#a-amber)"/>
+  <line x1="585" y1="198" x2="618" y2="198" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5,4" marker-end="url(#a-grey)"/>
+  <text x="600" y="188" font-family="Arial, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="middle">交给内部</text>
+
+  <text x="20" y="340" font-family="Arial, sans-serif" font-size="12" fill="#64748b">说明：节点之间的互调（路由转发、副本同步）也走 gRPC；本节先把“对外的服务契约 + Server 骨架”立起来。</text>
+</svg>

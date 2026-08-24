@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="380" fill="#ffffff"/>
+  <defs>
+    <marker id="rs1-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="rs1-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#22c55e"/></marker>
+    <marker id="rs1-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#c0392b"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 1　副本同步：异步、不阻塞 Master；同步失败标记 out-of-sync 后重建</text>
+
+  <!-- Master -->
+  <rect x="40" y="70" width="200" height="90" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="140" y="100" font-family="Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#b45309" text-anchor="middle">Master 时间轮</text>
+  <text x="140" y="124" font-family="Arial, sans-serif" font-size="11" fill="#334155" text-anchor="middle">接写入 · 调度 · 投递</text>
+  <text x="140" y="144" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">写完即返回，不等 Slave</text>
+
+  <!-- Slave -->
+  <rect x="620" y="70" width="200" height="90" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="720" y="100" font-family="Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">Slave 时间轮</text>
+  <text x="720" y="124" font-family="Arial, sans-serif" font-size="11" fill="#334155" text-anchor="middle">热备 · 只接同步</text>
+  <text x="720" y="144" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">在别的节点上</text>
+
+  <!-- async sync -->
+  <line x1="240" y1="100" x2="618" y2="100" stroke="#22c55e" stroke-width="2.2" stroke-dasharray="7,4" marker-end="url(#rs1-green)"/>
+  <text x="330" y="90" font-family="Arial, sans-serif" font-size="11.5" fill="#15803d">异步 gRPC 同步写入（几毫秒）</text>
+
+  <!-- Redis truth source -->
+  <rect x="330" y="210" width="200" height="60" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2.4"/>
+  <text x="430" y="236" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#15803d" text-anchor="middle">Redis（权威数据来源）</text>
+  <text x="430" y="256" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">Master/Slave 都只是加速层</text>
+  <line x1="140" y1="160" x2="360" y2="208" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#rs1-amber)"/>
+  <text x="150" y="195" font-family="Arial, sans-serif" font-size="10" fill="#b45309">先落库</text>
+
+  <!-- out of sync -->
+  <rect x="600" y="210" width="235" height="80" rx="10" fill="#fdecea" stroke="#c0392b" stroke-width="2"/>
+  <text x="717" y="235" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#c0392b" text-anchor="middle">同步失败怎么办</text>
+  <text x="717" y="256" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">不阻塞 Master；在 ETCD 标记</text>
+  <text x="717" y="274" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">Slave = out-of-sync → 重建</text>
+  <line x1="720" y1="160" x2="720" y2="208" stroke="#c0392b" stroke-width="1.8" stroke-dasharray="4,4" marker-end="url(#rs1-red)"/>
+
+  <text x="20" y="322" font-family="Arial, sans-serif" font-size="12" fill="#334155">为什么异步：同步复制会让每次写入等待 Slave 应答，降低吞吐。Redis 保存权威状态，因此 Slave 短暂落后不会丢失状态。</text>
+  <text x="20" y="346" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">out-of-sync 的 Slave 由 Controller 触发重建：直接从 Redis 全量加载，补齐落后。</text>
+</svg>

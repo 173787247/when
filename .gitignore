@@ -22,3 +22,15 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# Loop Runner runtime and local dependency state
+.loop/
+!/.loop/.gitkeep
+
+# Maven build output
+target/
+**/target/
+
+# Python runner bytecode
+__pycache__/
+*.py[cod]

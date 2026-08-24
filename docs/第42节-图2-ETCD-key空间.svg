@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 420" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="420" fill="#ffffff"/>
+  <defs>
+    <marker id="e2-grey" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　ETCD key 空间：元数据存什么、哪些带 Lease 自动清</text>
+
+  <!-- root -->
+  <rect x="30" y="60" width="120" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+  <text x="90" y="85" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#b45309" text-anchor="middle">/when</text>
+
+  <!-- branches -->
+  <g font-family="Arial, sans-serif">
+    <!-- nodes -->
+    <rect x="230" y="55" width="330" height="70" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="245" y="78" font-size="12.5" font-weight="bold" fill="#1d4ed8">/when/nodes/{node_id}</text>
+    <text x="245" y="98" font-size="10.5" fill="#334155">节点注册信息（ip/port/负载）</text>
+    <text x="245" y="116" font-size="10.5" fill="#334155">带 Lease（TTL 10s）→ 宕机自动消失</text>
+    <rect x="580" y="70" width="250" height="40" rx="7" fill="#dcfce7" stroke="#22c55e" stroke-width="1.8"/>
+    <text x="705" y="95" font-size="11" fill="#15803d" text-anchor="middle">Lease · 自动清 · 供故障感知</text>
+
+    <!-- controller -->
+    <rect x="230" y="140" width="330" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="245" y="163" font-size="12.5" font-weight="bold" fill="#1d4ed8">/when/controller</text>
+    <text x="245" y="183" font-size="10.5" fill="#334155">当前 Controller 节点 ID · 带 Lease</text>
+    <rect x="580" y="150" width="250" height="40" rx="7" fill="#dcfce7" stroke="#22c55e" stroke-width="1.8"/>
+    <text x="705" y="175" font-size="11" fill="#15803d" text-anchor="middle">Lease · 选主靠它</text>
+
+    <!-- timewheels -->
+    <rect x="230" y="215" width="330" height="70" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="245" y="238" font-size="12.5" font-weight="bold" fill="#1d4ed8">/when/timewheels/{tw_id}</text>
+    <text x="245" y="258" font-size="10.5" fill="#334155">时间轮元数据（Master/Slave 分布、状态）</text>
+    <text x="245" y="276" font-size="10.5" fill="#334155">持久化，不带 Lease</text>
+    <rect x="580" y="230" width="250" height="40" rx="7" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.8"/>
+    <text x="705" y="255" font-size="11" fill="#475569" text-anchor="middle">持久 · 需要时手动更新</text>
+
+    <!-- config -->
+    <rect x="230" y="300" width="330" height="60" rx="8" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+    <text x="245" y="323" font-size="12.5" font-weight="bold" fill="#1d4ed8">/when/config/*</text>
+    <text x="245" y="343" font-size="10.5" fill="#334155">集群配置：副本数、时间轮数等 · 持久</text>
+    <rect x="580" y="310" width="250" height="40" rx="7" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.8"/>
+    <text x="705" y="335" font-size="11" fill="#475569" text-anchor="middle">持久 · 动态可调</text>
+  </g>
+
+  <!-- tree lines -->
+  <line x1="90" y1="100" x2="90" y2="330" stroke="#94a3b8" stroke-width="1.6"/>
+  <line x1="90" y1="90"  x2="228" y2="90"  stroke="#94a3b8" stroke-width="1.6" marker-end="url(#e2-grey)"/>
+  <line x1="90" y1="170" x2="228" y2="170" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#e2-grey)"/>
+  <line x1="90" y1="250" x2="228" y2="250" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#e2-grey)"/>
+  <line x1="90" y1="330" x2="228" y2="330" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#e2-grey)"/>
+
+  <text x="20" y="398" font-family="Arial, sans-serif" font-size="12" fill="#64748b">原则：层级清晰按前缀 Watch · 每个 value 都是小对象 · 生命周期分明（nodes/controller 带 Lease，timewheels/config 持久）。</text>
+</svg>

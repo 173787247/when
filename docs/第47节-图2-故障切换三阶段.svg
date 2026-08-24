@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="380" fill="#ffffff"/>
+  <defs>
+    <marker id="rs2-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　Master 故障切换三阶段：检测 → 决策 → 执行（10 秒内接管，零丢失）</text>
+
+  <!-- stage 1 -->
+  <rect x="30" y="70" width="255" height="130" rx="10" fill="#fdecea" stroke="#c0392b" stroke-width="2.2"/>
+  <text x="157" y="96" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#c0392b" text-anchor="middle">① 检测</text>
+  <text x="50" y="122" font-family="Arial, sans-serif" font-size="11" fill="#334155">Master 节点宕机</text>
+  <text x="50" y="144" font-family="Arial, sans-serif" font-size="11" fill="#334155">Lease 续约停止</text>
+  <text x="50" y="166" font-family="Arial, sans-serif" font-size="11" fill="#334155">ETCD 删除节点 key</text>
+  <text x="50" y="188" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b">Controller Watch 到 DELETE</text>
+
+  <!-- stage 2 -->
+  <rect x="303" y="70" width="255" height="130" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+  <text x="430" y="96" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#b45309" text-anchor="middle">② 决策（Controller）</text>
+  <text x="323" y="122" font-family="Arial, sans-serif" font-size="11" fill="#334155">查故障节点上有哪些 Master</text>
+  <text x="323" y="144" font-family="Arial, sans-serif" font-size="11" fill="#334155">对每个：更新 ETCD 元数据</text>
+  <text x="323" y="166" font-family="Arial, sans-serif" font-size="11" fill="#334155">把对应 Slave 提升为新 Master</text>
+  <text x="323" y="188" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b">并为其分配新的 Slave</text>
+
+  <!-- stage 3 -->
+  <rect x="576" y="70" width="255" height="130" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2.2"/>
+  <text x="703" y="96" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#15803d" text-anchor="middle">③ 执行（新 Master）</text>
+  <text x="596" y="122" font-family="Arial, sans-serif" font-size="11" fill="#334155">Watch 到元数据变化</text>
+  <text x="596" y="144" font-family="Arial, sans-serif" font-size="11" fill="#334155">先从 Redis 全量恢复补齐</text>
+  <text x="596" y="166" font-family="Arial, sans-serif" font-size="11" fill="#334155">启动调度循环，接管</text>
+  <text x="596" y="188" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b">向新 Slave 开始同步</text>
+
+  <line x1="285" y1="135" x2="301" y2="135" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#rs2-amber)"/>
+  <line x1="558" y1="135" x2="574" y2="135" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#rs2-amber)"/>
+
+  <!-- guarantees -->
+  <rect x="30" y="235" width="801" height="110" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="48" y="260" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#334155">两条保证</text>
+  <text x="48" y="284" font-family="Arial, sans-serif" font-size="11.5" fill="#334155"><tspan font-weight="bold" fill="#15803d">不丢：</tspan>已落库消息都在 Redis，新 Master 从 Redis 恢复 → 一条不丢。切换窗口内写入可失败、业务方重试。</text>
+  <text x="48" y="308" font-family="Arial, sans-serif" font-size="11.5" fill="#334155"><tspan font-weight="bold" fill="#b45309">不重复（至少一次）：</tspan>若旧 Master 投递成功但没来得及删 Redis 就挂，新 Master 会重投 → 可能重复。</text>
+  <text x="48" y="330" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">跨系统精确一次代价太大；至少一次 + 业务方幂等，是 Kafka/RocketMQ/Pulsar 的事实标准。</text>
+</svg>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 820 470" xmlns="http://www.w3.org/2000/svg">
+  <rect width="820" height="470" fill="#ffffff"/>
+  <defs>
+    <marker id="b-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="b-green" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#22c55e"/></marker>
+  </defs>
+  <text x="20" y="28" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　三个对外接口的调用时序（同步一问一答）</text>
+
+  <!-- lifelines -->
+  <rect x="55" y="48" width="150" height="44" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
+  <text x="130" y="76" font-family="Arial, sans-serif" font-size="13.5" font-weight="bold" fill="#4338ca" text-anchor="middle">调用方</text>
+  <rect x="560" y="48" width="205" height="44" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.6"/>
+  <text x="662" y="70" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#b45309" text-anchor="middle">DelayMessageService</text>
+  <text x="662" y="86" font-family="Arial, sans-serif" font-size="10.5" fill="#b45309" text-anchor="middle">gRPC Server（本节）</text>
+  <line x1="130" y1="92" x2="130" y2="440" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="4,4"/>
+  <line x1="662" y1="92" x2="662" y2="440" stroke="#f59e0b" stroke-width="1.4" stroke-dasharray="4,4"/>
+
+  <!-- ① Submit -->
+  <text x="60" y="128" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#b45309">① 发送</text>
+  <line x1="130" y1="140" x2="660" y2="140" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#b-amber)"/>
+  <text x="150" y="132" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">Submit（deliver_at / delay_seconds、sink_type、sink_config、payload）</text>
+  <line x1="662" y1="176" x2="132" y2="176" stroke="#22c55e" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#b-green)"/>
+  <text x="150" y="169" font-family="Arial, sans-serif" font-size="11.5" fill="#15803d">message_id、status = PENDING、deliver_at</text>
+
+  <line x1="30" y1="205" x2="790" y2="205" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- ② Query -->
+  <text x="60" y="240" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#b45309">② 查询</text>
+  <line x1="130" y1="252" x2="660" y2="252" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#b-amber)"/>
+  <text x="150" y="244" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">Query（message_id）</text>
+  <line x1="662" y1="288" x2="132" y2="288" stroke="#22c55e" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#b-green)"/>
+  <text x="150" y="281" font-family="Arial, sans-serif" font-size="11.5" fill="#15803d">status、created_at、deliver_at、retry_count、last_error</text>
+
+  <line x1="30" y1="317" x2="790" y2="317" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- ③ Cancel -->
+  <text x="60" y="352" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#b45309">③ 取消</text>
+  <line x1="130" y1="364" x2="660" y2="364" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#b-amber)"/>
+  <text x="150" y="356" font-family="Arial, sans-serif" font-size="11.5" fill="#334155">Cancel（message_id）</text>
+  <line x1="662" y1="400" x2="132" y2="400" stroke="#22c55e" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#b-green)"/>
+  <text x="150" y="393" font-family="Arial, sans-serif" font-size="11.5" fill="#15803d">status = CANCELLED（已投递则返回失败）</text>
+
+  <text x="20" y="455" font-family="Arial, sans-serif" font-size="11.5" fill="#64748b">本节 Server 只做到“校验 + 生成 message_id + 返回”；持久化 / 调度 / 投递为后续节，接口契约保持不变。</text>
+</svg>

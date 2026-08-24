@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 380" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="380" fill="#ffffff"/>
+  <defs>
+    <marker id="c2-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　时间轮 rebalance：把副本均匀铺到节点，优先迁 Slave</text>
+
+  <!-- before -->
+  <text x="40" y="66" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#c0392b">新节点加入前（node-3 空）</text>
+  <rect x="40" y="80" width="120" height="120" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="100" y="102" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#b45309" text-anchor="middle">node-1</text>
+  <text x="100" y="128" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">tw-1 M · tw-2 M</text>
+  <text x="100" y="148" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">tw-3 S · tw-4 S</text>
+  <text x="100" y="180" font-family="Arial, sans-serif" font-size="10" fill="#c0392b" text-anchor="middle">4 副本（过载）</text>
+
+  <rect x="175" y="80" width="120" height="120" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="235" y="102" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#1d4ed8" text-anchor="middle">node-2</text>
+  <text x="235" y="128" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">tw-3 M · tw-4 M</text>
+  <text x="235" y="148" font-family="Arial, sans-serif" font-size="10.5" fill="#334155" text-anchor="middle">tw-1 S · tw-2 S</text>
+  <text x="235" y="180" font-family="Arial, sans-serif" font-size="10" fill="#334155" text-anchor="middle">4 副本</text>
+
+  <rect x="310" y="80" width="120" height="120" rx="9" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
+  <text x="370" y="102" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#475569" text-anchor="middle">node-3</text>
+  <text x="370" y="140" font-family="Arial, sans-serif" font-size="10.5" fill="#94a3b8" text-anchor="middle">（空）</text>
+
+  <!-- arrow -->
+  <line x1="445" y1="140" x2="500" y2="140" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#c2-amber)"/>
+  <text x="472" y="128" font-family="Arial, sans-serif" font-size="10" fill="#b45309" text-anchor="middle">迁 Slave</text>
+
+  <!-- after -->
+  <text x="520" y="66" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#15803d">rebalance 后（均匀）</text>
+  <rect x="520" y="80" width="100" height="120" rx="9" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="570" y="102" font-family="Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#b45309" text-anchor="middle">node-1</text>
+  <text x="570" y="130" font-family="Arial, sans-serif" font-size="10" fill="#334155" text-anchor="middle">tw-1 M · tw-2 M</text>
+  <text x="570" y="150" font-family="Arial, sans-serif" font-size="10" fill="#334155" text-anchor="middle">tw-3 S</text>
+
+  <rect x="628" y="80" width="100" height="120" rx="9" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="678" y="102" font-family="Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#1d4ed8" text-anchor="middle">node-2</text>
+  <text x="678" y="130" font-family="Arial, sans-serif" font-size="10" fill="#334155" text-anchor="middle">tw-3 M · tw-4 M</text>
+  <text x="678" y="150" font-family="Arial, sans-serif" font-size="10" fill="#334155" text-anchor="middle">tw-1 S</text>
+
+  <rect x="736" y="80" width="100" height="120" rx="9" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="786" y="102" font-family="Arial, sans-serif" font-size="11.5" font-weight="bold" fill="#15803d" text-anchor="middle">node-3</text>
+  <text x="786" y="130" font-family="Arial, sans-serif" font-size="10" fill="#334155" text-anchor="middle">tw-2 S · tw-4 S</text>
+  <text x="786" y="168" font-family="Arial, sans-serif" font-size="10" fill="#15803d" text-anchor="middle">接了 Slave</text>
+
+  <!-- rules -->
+  <rect x="40" y="235" width="795" height="115" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="58" y="260" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#334155">算法要点</text>
+  <text x="58" y="284" font-family="Arial, sans-serif" font-size="11" fill="#334155">① 每个时间轮恰好 1 Master + 1 Slave，且必须异节点；每节点副本总数尽量均匀（target ± 1）。</text>
+  <text x="58" y="306" font-family="Arial, sans-serif" font-size="11" fill="#334155">② 优先迁 Slave：Slave 迁移对业务无感；Master 迁移要短暂中断写入，只在故障切换/运维时动。</text>
+  <text x="58" y="328" font-family="Arial, sans-serif" font-size="11" fill="#334155">③ 渐进迁移，一次只动少量副本，避免集群震荡；不追绝对平均（±1 即可）。</text>
+</svg>

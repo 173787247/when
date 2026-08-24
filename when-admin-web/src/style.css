@@ -1,0 +1,10 @@
+:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #172033; background: #f4f6fa; }
+body { margin: 0; min-width: 1080px; }
+.shell { min-height: 100vh; }
+.header { display: flex; align-items: center; justify-content: space-between; background: #111827; color: white; padding: 0 28px; }
+.brand { font-weight: 800; letter-spacing: .24em; color: #59d7c5; }
+.subtitle { margin-left: 18px; color: #d1d5db; }
+.el-main { padding: 24px 30px; }
+.toolbar, .pager { display: flex; gap: 12px; justify-content: flex-end; margin: 0 0 18px; }
+.pager { margin-top: 16px; }
+.request-id { margin-top: 14px; color: #6b7280; font-size: 12px; text-align: right; }

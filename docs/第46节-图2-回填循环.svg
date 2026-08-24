@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 860 360" xmlns="http://www.w3.org/2000/svg">
+  <rect width="860" height="360" fill="#ffffff"/>
+  <defs>
+    <marker id="d2-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
+    <marker id="d2-red" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#c0392b"/></marker>
+  </defs>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　失败后留在当前课程分支，根据文档继续修正</text>
+
+  <!-- run -->
+  <rect x="60" y="90" width="150" height="60" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2.2"/>
+  <text x="135" y="118" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#15803d" text-anchor="middle">执行 Loop</text>
+  <text x="135" y="138" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">46 执行 ./loop run --phase first</text>
+
+  <!-- problem -->
+  <rect x="340" y="90" width="180" height="60" rx="10" fill="#fdecea" stroke="#c0392b" stroke-width="2.2"/>
+  <text x="430" y="114" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#c0392b" text-anchor="middle">发现问题</text>
+  <text x="430" y="134" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">测试失败 / 契约不一致 / 实现越界</text>
+
+  <!-- fix into raw material -->
+  <rect x="650" y="90" width="180" height="60" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="2.4"/>
+  <text x="740" y="114" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#b45309" text-anchor="middle">按文档修正实现</text>
+  <text x="740" y="134" font-family="Arial, sans-serif" font-size="10" fill="#64748b" text-anchor="middle">不提问，不改文档和验收</text>
+
+  <line x1="210" y1="120" x2="338" y2="120" stroke="#c0392b" stroke-width="2.2" marker-end="url(#d2-red)"/>
+  <line x1="520" y1="120" x2="648" y2="120" stroke="#f59e0b" stroke-width="2.2" marker-end="url(#d2-amber)"/>
+
+  <!-- loop back arrow -->
+  <line x1="740" y1="150" x2="740" y2="200" stroke="#f59e0b" stroke-width="2"/>
+  <line x1="740" y1="200" x2="135" y2="200" stroke="#f59e0b" stroke-width="2"/>
+  <line x1="135" y1="200" x2="135" y2="152" stroke="#f59e0b" stroke-width="2" marker-end="url(#d2-amber)"/>
+  <text x="400" y="192" font-family="Arial, sans-serif" font-size="11.5" fill="#b45309" text-anchor="middle">在同一 lesson 分支继续验收</text>
+
+  <!-- mapping table -->
+  <rect x="60" y="240" width="770" height="100" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+  <text x="75" y="264" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#334155">失败时先看哪份文档：</text>
+  <g font-family="Arial, sans-serif" font-size="11" fill="#334155">
+    <text x="75" y="288">· 字段/契约不一致 → 第 39 或 40 节已有约定</text>
+    <text x="75" y="310">· 存储/恢复失败 → 41　· 到点不准 → 44</text>
+    <text x="75" y="332">· 路由/发号/转发错 → 45　· 注册/选主错 → 42/43</text>
+    <text x="470" y="288" fill="#64748b">文档和验收保持不变。</text>
+    <text x="470" y="310" fill="#64748b">Runner 保存失败证据，</text>
+    <text x="470" y="332" fill="#64748b">让 AI 继续修正代码。</text>
+  </g>
+</svg>

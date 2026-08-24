@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: when-config
+data:
+  WHEN_HTTP_PORT: "8080"
+  WHEN_MANAGEMENT_HOST: "0.0.0.0"
+  WHEN_MANAGEMENT_PORT: "8081"
+  WHEN_GRPC_PORT: "9090"
+  WHEN_TIMEWHEEL_COUNT: "1"
+  WHEN_ETCD_ENDPOINTS: "https://etcd.example.internal:2379"
+  WHEN_REDIS_HOST: "redis.example.internal"
+  WHEN_REDIS_PORT: "6379"
+  WHEN_REDIS_TLS: "true"
+  WHEN_KAFKA_BOOTSTRAP_SERVERS: ""
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  WHEN_LOG_LEVEL: "INFO"
+  WHEN_LOG_FORMAT: "json"
+  WHEN_SHUTDOWN_TIMEOUT: "30s"
