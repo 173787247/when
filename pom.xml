@@ -14,6 +14,15 @@
 
     <modules>
         <module>when-common</module>
+        <module>when-api</module>
+        <module>when-storage-redis</module>
+        <module>when-cluster</module>
+        <module>when-timewheel</module>
+        <module>when-ingress-router</module>
+        <module>when-test-support</module>
+        <module>when-app</module>
+        <module>when-e2e-test</module>
+        <module>when-acceptance</module>
     </modules>
 
     <properties>
@@ -21,12 +30,29 @@
         <maven.compiler.release>17</maven.compiler.release>
         <junit.version>5.11.4</junit.version>
         <protobuf.version>3.25.5</protobuf.version>
+        <jackson.version>2.19.1</jackson.version>
+        <jedis.version>5.0.0</jedis.version>
+        <jetcd.version>0.7.7</jetcd.version>
+        <netty.version>4.1.122.Final</netty.version>
+        <grpc.version>1.50.2</grpc.version>
         <maven.compiler.version>3.13.0</maven.compiler.version>
         <maven.surefire.version>3.5.0</maven.surefire.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>${grpc.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-common</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.junit</groupId>
                 <artifactId>junit-bom</artifactId>

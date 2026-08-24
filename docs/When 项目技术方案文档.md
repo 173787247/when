@@ -418,17 +418,21 @@ Sink 通过 Java SPI 加载，启动时形成 `SinkType → Sink` 注册表。�
 
 ## 14. 部署
 
-### 14.1 本地与演示
+### 14.1 Make 与 TGZ
 
-docker-compose 启动 ETCD、Redis、Kafka、HTTP Mock 和 3 个 When 节点。所有节点使用不同 `WHEN_NODE_ID`、`WHEN_WORKER_ID` 和端口。
+根目录 Makefile 统一构建入口。`make release` 完成测试和打包，生成可解压启动的 `when-server-{version}.tgz`、独立管理台静态包、校验和与 SBOM。服务端 TGZ 只包含 When 的启动脚本、Jar、示例配置和许可证，不包含 Redis、ETCD、Kafka 或观测后端。
 
-### 14.2 传统生产
+传统主机解压 TGZ，通过同一套配置连接外部 Redis、ETCD 和按需使用的 Kafka、OTLP Collector。`bin/when run` 前台运行，`start/stop/status` 只管理当前 When 进程。
 
-3 台机器各运行一个 When 节点，前置负载均衡；外部连接生产级 ETCD、Redis 和 Kafka。When 的 HA 不等于依赖组件 HA，部署方必须独立保证依赖可靠性。
+### 14.2 Docker
+
+Docker 镜像只包含 JRE 和 When Server，以非 root 用户运行。Redis、ETCD、Kafka 和观测服务的地址通过环境变量或只读配置文件注入；依赖不可用时 `/ready` 返回 503，应用保持有界重连。镜像不包含依赖服务的二进制、数据或启动脚本。
 
 ### 14.3 Kubernetes
 
-When 节点使用 StatefulSet，配套 Headless Service、业务 Service、管理 Service、ConfigMap、Secret 引用、startup/readiness/liveness 和 PDB。Pod 名作为稳定 node ID，Snowflake 使用独立的数字 worker ID。滚动升级至少保留 2 个可用节点。ETCD、Redis、Kafka 使用组织现有集群或仍在维护的部署方案，不由 When Operator 管理。
+Kubernetes 清单只部署 When：StatefulSet、Headless Service、业务 Service、管理 Service、ConfigMap、Secret 引用、startup/readiness/liveness、PDB 与安全上下文。Pod 名作为稳定 node ID，Snowflake 使用独立的数字 worker ID，滚动升级至少保留 2 个可用节点。
+
+清单不得创建 Redis、ETCD、Kafka、HTTP Mock、Prometheus、Loki、Tempo、Grafana 或 OpenTelemetry Collector。部署方连接组织已有集群、托管服务或平台提供的实例，When 项目只定义连接配置和健康要求。
 
 统一环境变量：
 
@@ -441,6 +445,8 @@ WHEN_ETCD_ENDPOINTS
 WHEN_REDIS_HOST
 WHEN_REDIS_PORT
 WHEN_REDIS_PASSWORD
+WHEN_KAFKA_BOOTSTRAP_SERVERS
+OTEL_EXPORTER_OTLP_ENDPOINT
 WHEN_TIMEWHEEL_COUNT
 WHEN_LOG_LEVEL
 WHEN_LOG_FORMAT
