@@ -12,6 +12,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.when.observability.Metrics;
+import com.when.observability.WhenMetrics;
 
 /** Redis-first promotion executor for assignments already committed by the Controller. */
 public final class DefaultFailoverExecutor implements FailoverExecutor, AutoCloseable {
@@ -21,16 +23,27 @@ public final class DefaultFailoverExecutor implements FailoverExecutor, AutoClos
     private final ReplicaAssignmentStore assignments;
     private final ExecutorService executor;
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final Metrics metrics;
 
     public DefaultFailoverExecutor(
             String localNodeId,
             TimeWheelRegistry timeWheels,
             StoragePlugin storage,
             ReplicaAssignmentStore assignments) {
+        this(localNodeId, timeWheels, storage, assignments, Metrics.noop());
+    }
+
+    public DefaultFailoverExecutor(
+            String localNodeId,
+            TimeWheelRegistry timeWheels,
+            StoragePlugin storage,
+            ReplicaAssignmentStore assignments,
+            Metrics metrics) {
         this.localNodeId = requireText(localNodeId, "localNodeId");
         this.timeWheels = Objects.requireNonNull(timeWheels, "timeWheels");
         this.storage = Objects.requireNonNull(storage, "storage");
         this.assignments = Objects.requireNonNull(assignments, "assignments");
+        this.metrics = Objects.requireNonNull(metrics, "metrics");
         this.executor = Executors.newSingleThreadExecutor(runnable -> {
             Thread thread = new Thread(runnable, "when-failover-" + safe(localNodeId));
             thread.setDaemon(true);
@@ -48,7 +61,11 @@ public final class DefaultFailoverExecutor implements FailoverExecutor, AutoClos
             return CompletableFuture.completedFuture(new PromotionResult(
                     assignment.twId(), assignment.assignmentVersion(), false, 0));
         }
-        return CompletableFuture.supplyAsync(() -> promote(assignment), executor);
+        return CompletableFuture.supplyAsync(() -> promote(assignment), executor)
+                .whenComplete((result, failure) -> metrics.incr(
+                        WhenMetrics.MASTER_FAILOVER,
+                        "result", failure == null ? "success" : "failure",
+                        "reason", "master_unavailable"));
     }
 
     private PromotionResult promote(TimeWheelAssignment requested) {

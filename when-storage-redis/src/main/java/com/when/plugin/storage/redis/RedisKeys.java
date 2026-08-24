@@ -10,12 +10,17 @@ public final class RedisKeys {
     public static final String DELIVERY_LEASE_PREFIX = "when:delivery:lease:";
     public static final String DELIVERY_ATTEMPT_PREFIX = "when:delivery:attempt:";
     public static final String DELIVERY_RECENT_PREFIX = "when:delivery:recent:";
+    public static final String TRACE_CONTEXT_PREFIX = "when:trace:";
 
     private RedisKeys() {
     }
 
     public static String message(String messageId) {
         return MESSAGE_PREFIX + component(messageId, "messageId");
+    }
+
+    public static String traceContext(String messageId) {
+        return TRACE_CONTEXT_PREFIX + component(messageId, "messageId");
     }
 
     public static String scheduleIndex(String timeWheelId, String messageId) {

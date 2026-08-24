@@ -7,6 +7,7 @@ import com.when.core.Message;
 import com.when.core.SinkConfig;
 import com.when.core.SinkType;
 import com.when.sink.spi.AttemptAwareSink;
+import com.when.observability.TraceOperations;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -44,13 +45,14 @@ public final class KafkaSink implements AttemptAwareSink, AutoCloseable {
     private static final Duration DEFAULT_IDLE_TIMEOUT = Duration.ofMinutes(10);
     private static final Duration DEFAULT_SEND_TIMEOUT = Duration.ofSeconds(30);
     private static final List<String> RESERVED_HEADERS = List.of(
-            "x-when-message-id", "x-when-attempt-id", "x-when-trace-id");
+            "x-when-message-id", "x-when-attempt-id", "x-when-trace-id", "traceparent", "tracestate");
 
     private final KafkaProducerFactory producerFactory;
     private final KafkaProducerSettingsResolver settingsResolver;
     private final int maxProducers;
     private final long idleTimeoutNanos;
     private final long sendTimeoutMillis;
+    private final TraceOperations traces;
     private final Object cacheLock = new Object();
     private final Map<String, CachedProducer> producers = new HashMap<>();
     private boolean closed;
@@ -62,7 +64,18 @@ public final class KafkaSink implements AttemptAwareSink, AutoCloseable {
                 KafkaSink::environmentSettings,
                 DEFAULT_MAX_PRODUCERS,
                 DEFAULT_IDLE_TIMEOUT,
-                DEFAULT_SEND_TIMEOUT);
+                DEFAULT_SEND_TIMEOUT,
+                TraceOperations.noop());
+    }
+
+    public KafkaSink(TraceOperations traces) {
+        this(
+                properties -> new KafkaProducer<>(properties),
+                KafkaSink::environmentSettings,
+                DEFAULT_MAX_PRODUCERS,
+                DEFAULT_IDLE_TIMEOUT,
+                DEFAULT_SEND_TIMEOUT,
+                traces);
     }
 
     public KafkaSink(KafkaProducerFactory producerFactory) {
@@ -71,7 +84,8 @@ public final class KafkaSink implements AttemptAwareSink, AutoCloseable {
                 KafkaSink::baseSettings,
                 DEFAULT_MAX_PRODUCERS,
                 DEFAULT_IDLE_TIMEOUT,
-                DEFAULT_SEND_TIMEOUT);
+                DEFAULT_SEND_TIMEOUT,
+                TraceOperations.noop());
     }
 
     public KafkaSink(
@@ -80,6 +94,22 @@ public final class KafkaSink implements AttemptAwareSink, AutoCloseable {
             int maxProducers,
             Duration idleTimeout,
             Duration sendTimeout) {
+        this(
+                producerFactory,
+                settingsResolver,
+                maxProducers,
+                idleTimeout,
+                sendTimeout,
+                TraceOperations.noop());
+    }
+
+    public KafkaSink(
+            KafkaProducerFactory producerFactory,
+            KafkaProducerSettingsResolver settingsResolver,
+            int maxProducers,
+            Duration idleTimeout,
+            Duration sendTimeout,
+            TraceOperations traces) {
         this.producerFactory = Objects.requireNonNull(producerFactory, "producerFactory");
         this.settingsResolver = Objects.requireNonNull(settingsResolver, "settingsResolver");
         if (maxProducers < 1) {
@@ -88,6 +118,7 @@ public final class KafkaSink implements AttemptAwareSink, AutoCloseable {
         this.maxProducers = maxProducers;
         this.idleTimeoutNanos = requirePositive(idleTimeout, "idleTimeout").toNanos();
         this.sendTimeoutMillis = requirePositive(sendTimeout, "sendTimeout").toMillis();
+        this.traces = Objects.requireNonNull(traces, "traces");
     }
 
     @Override
@@ -136,6 +167,8 @@ public final class KafkaSink implements AttemptAwareSink, AutoCloseable {
             headers.add("X-When-Attempt-Id", requireText(attemptId, "attemptId")
                     .getBytes(StandardCharsets.UTF_8));
             headers.add("X-When-Trace-Id", safeTrace(message.traceId()).getBytes(StandardCharsets.UTF_8));
+            traces.injectCurrentContext().forEach((name, value) ->
+                    headers.add(name, value.getBytes(StandardCharsets.UTF_8)));
             String key = config.key() == null || config.key().isBlank() ? message.messageId() : config.key();
             ProducerRecord<String, byte[]> record = new ProducerRecord<>(
                     config.topic(), null, key, payload(message), headers);
