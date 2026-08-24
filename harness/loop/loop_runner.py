@@ -151,14 +151,7 @@ class Runner:
         for stage in self.config['stages']:
             rec=self.state['stages'].get(stage['id'])
             if invalid or (rec and rec.get('status')=='PASSED' and not self.valid_pass(stage)):
-                if rec and rec.get('protected_hash') != protected_hash(self.config):
-                    changed=git('diff','--name-only',f"{rec.get('merge_commit')}..master",'--',*self.config['protected_paths'],check=False).stdout.splitlines()
-                    if changed: raise LoopError(f"ENVIRONMENT_ERROR protected input changed for {stage['id']}: {', '.join(changed)}",7)
-                    rec['protected_hash']=protected_hash(self.config)
-                    rec['fingerprint_migration']='runtime-only protected fingerprint migration'
-                    if self.valid_pass(stage):
-                        self.state['stages'][stage['id']]=rec
-                        continue
+                if rec and rec.get('protected_hash') != protected_hash(self.config): raise LoopError(f"ENVIRONMENT_ERROR protected input changed for {stage['id']}",7)
                 self.state['stages'][stage['id']]={'lesson':stage['lesson'],'branch':stage['branch'],'status':'PENDING','invalidation_reason':'input/output fingerprint changed'}; invalid=True
         save(self.state)
     def acquire(self):
