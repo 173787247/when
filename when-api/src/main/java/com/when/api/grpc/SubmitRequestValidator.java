@@ -3,7 +3,6 @@ package com.when.api.grpc;
 import com.when.common.proto.SinkConfig.ConfigCase;
 import com.when.core.HttpSinkConfig;
 import com.when.core.KafkaSinkConfig;
-import com.when.core.FileSinkConfig;
 import com.when.core.SinkConfig;
 import com.when.core.SinkType;
 import java.time.Clock;
@@ -80,18 +79,9 @@ public final class SubmitRequestValidator {
                         config.getKey(),
                         config.getHeadersMap());
             }
-            case FILE -> {
-                requireConfigCase(request, ConfigCase.FILE);
-                var config = request.getSinkConfig().getFile();
-                if (config.getPath().isBlank()) {
-                    throw new RequestValidationException("sink_config.file.path is required");
-                }
-                sinkType = SinkType.FILE;
-                sinkConfig = new FileSinkConfig(config.getPath());
-            }
             case SINK_TYPE_UNSPECIFIED, UNRECOGNIZED ->
-                    throw new RequestValidationException("sink_type must be HTTP, KAFKA, or FILE");
-            default -> throw new RequestValidationException("sink_type must be HTTP, KAFKA, or FILE");
+                    throw new RequestValidationException("sink_type must be HTTP or KAFKA");
+            default -> throw new RequestValidationException("sink_type must be HTTP or KAFKA");
         }
 
         return new ValidatedSubmit(

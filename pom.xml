@@ -14,6 +14,7 @@
 
     <modules>
         <module>when-common</module>
+        <module>when-api</module>
     </modules>
 
     <properties>
