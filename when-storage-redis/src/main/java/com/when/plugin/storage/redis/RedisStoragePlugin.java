@@ -216,15 +216,6 @@ public final class RedisStoragePlugin implements StoragePlugin, AutoCloseable {
         pool.close();
     }
 
-    /** Bounded dependency probe for readiness; it does not read or expose message data. */
-    public boolean healthCheck() {
-        try (Jedis jedis = pool.getResource()) {
-            return "PONG".equals(jedis.ping());
-        } catch (JedisException failure) {
-            return false;
-        }
-    }
-
     private void loadBatch(
             Jedis jedis,
             String indexPrefix,

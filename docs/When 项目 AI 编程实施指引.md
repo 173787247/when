@@ -151,10 +151,10 @@ AI 负责大部分代码、测试、配置和文档草稿；人负责产品边�
 1. Master/Slave 异步同步、out-of-sync 和恢复执行；
 2. Controller 故障决策与 Rebalance；
 3. HTTP/Kafka Sink 和重试；
-4. Metrics、结构化日志、OpenTelemetry Trace 和健康检查；
+4. Metrics、结构化日志和健康检查；
 5. Admin API 与 Web 管理台；
-6. Make/TGZ、只包含 When 的 Docker 镜像、只部署 When 的 Kubernetes 清单和 CI；
-7. 通过 `./loop run --phase second` 完成第 47—52 节、完整 HA 验收、制品验证、部署/使用手册和交付报告。
+6. docker-compose、Kubernetes 和 CI；
+7. 第二次完整 HA 运行。
 
 第二次运行必须使用真实 Sink、动态时间轮分布和完整故障切换，不再允许桩。
 
@@ -233,7 +233,7 @@ AI 负责大部分代码、测试、配置和文档草稿；人负责产品边�
 
 ### 9.2 第二次运行：证明完整 HA
 
-继续使用第 46 节建好的 Runner，执行 `./loop run --phase second`。Runner 先按独立课程分支完成第 47—52 节，再在已准备外部依赖的干净环境部署 3 个 When 节点，依次完成：
+从干净环境一键部署 3 节点，依次完成：
 
 1. Submit、Query、Cancel；
 2. HTTP 与 Kafka 真投递；
@@ -241,11 +241,9 @@ AI 负责大部分代码、测试、配置和文档草稿；人负责产品边�
 4. 100 条消息到期前杀 Master；
 5. 验证 10 秒内接管、一条不丢、可接受重复；
 6. 杀 Controller，验证重新选举和后续决策；
-7. 汇总指标、日志、Trace、健康状态、管理台和测试报告；
-8. 验证 `make release` TGZ、只包含 When 的镜像和只部署 When 的 Kubernetes 清单；
-9. 校准 `DEPLOY.md`，生成 `USER_GUIDE.md`、集成测试报告、部署验证报告和发布报告。
+7. 汇总指标、日志、管理台和测试报告四类证据。
 
-问题归属到第 47～52 节对应责任阶段，Runner 使该阶段和下游状态失效后继续；已经完成且指纹未变的上游课程不重跑。
+问题归属到第 47～52 节对应原料，回填后从干净状态重跑。
 
 ## 10. Review 清单
 

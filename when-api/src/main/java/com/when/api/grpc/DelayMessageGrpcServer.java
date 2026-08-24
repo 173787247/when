@@ -10,10 +10,6 @@ import java.time.Clock;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import com.when.observability.grpc.GrpcTraceServerInterceptor;
-import com.when.observability.grpc.GrpcTraceContext;
-import com.when.observability.TraceOperations;
-import io.grpc.ServerInterceptors;
 
 /** Lifecycle wrapper for the internal gRPC service and standard health service. */
 public final class DelayMessageGrpcServer implements AutoCloseable {
@@ -23,30 +19,17 @@ public final class DelayMessageGrpcServer implements AutoCloseable {
     private final HealthStatusManager healthStatusManager;
 
     public DelayMessageGrpcServer(int port, DelayMessageHandler handler) {
-        this(port, handler, Clock.systemUTC(), TraceOperations.noop());
+        this(port, handler, Clock.systemUTC());
     }
 
     DelayMessageGrpcServer(int port, DelayMessageHandler handler, Clock clock) {
-        this(port, handler, clock, TraceOperations.noop());
-    }
-
-    public DelayMessageGrpcServer(
-            int port, DelayMessageHandler handler, TraceOperations traces) {
-        this(port, handler, Clock.systemUTC(), traces);
-    }
-
-    DelayMessageGrpcServer(
-            int port, DelayMessageHandler handler, Clock clock, TraceOperations traces) {
         if (port < 0 || port > 65_535) {
             throw new IllegalArgumentException("gRPC port must be between 0 and 65535");
         }
         Objects.requireNonNull(handler, "handler");
-        Objects.requireNonNull(traces, "traces");
         this.healthStatusManager = new HealthStatusManager();
         this.server = NettyServerBuilder.forPort(port)
-                .addService(ServerInterceptors.intercept(
-                        new DelayMessageServiceImpl(remoteContextHandler(handler, traces), clock),
-                        new GrpcTraceServerInterceptor()))
+                .addService(new DelayMessageServiceImpl(handler, clock))
                 .addService(healthStatusManager.getHealthService())
                 .build();
     }
@@ -71,31 +54,6 @@ public final class DelayMessageGrpcServer implements AutoCloseable {
         } catch (NumberFormatException exception) {
             throw new IllegalStateException(PORT_ENV + " must be an integer", exception);
         }
-    }
-
-    private static DelayMessageHandler remoteContextHandler(
-            DelayMessageHandler delegate, TraceOperations traces) {
-        return new DelayMessageHandler() {
-            @Override
-            public com.when.api.application.SubmitResult submit(
-                    com.when.api.application.SubmitCommand command) {
-                return remote(traces, () -> delegate.submit(command));
-            }
-
-            @Override
-            public com.when.api.application.MessageView query(String messageId) {
-                return remote(traces, () -> delegate.query(messageId));
-            }
-
-            @Override
-            public com.when.api.application.CancelResult cancel(String messageId) {
-                return remote(traces, () -> delegate.cancel(messageId));
-            }
-        };
-    }
-
-    private static <T> T remote(TraceOperations traces, java.util.function.Supplier<T> action) {
-        return traces.withRemoteContext(GrpcTraceContext.incoming(), action);
     }
 
     public DelayMessageGrpcServer start() throws IOException {

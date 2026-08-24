@@ -139,7 +139,6 @@ public final class DelayMessageServiceImpl extends DelayMessageServiceGrpc.Delay
         return switch (sinkType) {
             case HTTP -> com.when.common.proto.SinkType.HTTP;
             case KAFKA -> com.when.common.proto.SinkType.KAFKA;
-            case FILE -> com.when.common.proto.SinkType.FILE;
         };
     }
 

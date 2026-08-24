@@ -10,7 +10,6 @@ enum SinkType {
   SINK_TYPE_UNSPECIFIED = 0;
   HTTP = 1;
   KAFKA = 2;
-  FILE = 3;
 }
 
 enum MessageStatus {
@@ -36,14 +35,9 @@ message KafkaSinkConfig {
   map<string, string> headers = 4;
 }
 
-message FileSinkConfig {
-  string path = 1;
-}
-
 message SinkConfig {
   oneof config {
     HttpSinkConfig http = 1;
     KafkaSinkConfig kafka = 2;
-    FileSinkConfig file = 3;
   }
 }

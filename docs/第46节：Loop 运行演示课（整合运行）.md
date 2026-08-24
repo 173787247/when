@@ -1,6 +1,6 @@
 # 第 46 节：Loop 运行演示课（第一次运行）
 
-> 第 39—45 节已经准备好第一阶段原料，第 47—53 节已经准备好第二阶段原料和交付规则。本节只给 Codex **一个提示词**。Codex 先开发并验证支持 phase 的 Loop Runner，再直接执行 `./loop run --phase first`，直到第一阶段全部完成。
+> 第 39—45 节已经准备好模块原料。本节只给 Codex **一个提示词**。Codex 先开发并验证 Loop Runner，再直接执行 `./loop run`，直到第一阶段全部完成。
 >
 > 学员不需要在 Runner 建好后再发第二个提示词，也不需要手动接力。创建工具、运行 Loop、处理失败和完成验收都在同一个 Codex 任务中连续进行。
 >
@@ -10,7 +10,7 @@
 
 ## 1. 这一节做什么
 
-一句话：**把一个提示词交给 Codex；Codex 先在 `lesson/46` 分支开发支持两个阶段的 Loop Runner 并合并 `master`，随后运行 `./loop run --phase first`，按照第 39—45 节顺序开发，直到第一阶段验收全部通过。**
+一句话：**把一个提示词交给 Codex；Codex 先在 `lesson/46` 分支开发 Loop Runner并合并 `master`，随后运行 `./loop run`，按照第 39—45 节顺序开发，直到第一阶段验收全部通过。**
 
 本节分为两部分：
 
@@ -35,10 +35,9 @@
 2. docs/When 项目需求文档.md
 3. docs/When 项目技术方案文档.md
 4. docs/When 项目 AI 编程实施指引.md
-5. docs/第39—45节的第一阶段 Loop 原料文档
-6. docs/第47—53节的第二阶段 Loop 原料与交付文档
-7. docs/第46节：Loop 运行演示课（整合运行）.md
-8. docs/第46节附件：Loop Runner 完整使用与实现手册.md
+5. docs/第39—45节的 Loop 原料文档
+6. docs/第46节：Loop 运行演示课（整合运行）.md
+7. docs/第46节附件：Loop Runner 完整使用与实现手册.md
 
 如果还没有 Git 仓库，先初始化并建立干净的 `master` 基线；然后从 `master` 创建并切换到 `lesson/46`。第一步只创建并验证以下内容：
 - 根据上述文档生成适用于 Codex 的 AGENTS.md
@@ -71,16 +70,15 @@
 13. 实现、编译或测试出现问题时，不询问用户、不等待确认。重新阅读四份项目文档、公共契约、当前课程文档和失败日志，在当前 lesson 分支继续修改并重试。
 14. 文档没有规定实现细节时，选择满足现有接口和验收的最简单方案，并把选择写入本轮报告；不能借此改变需求、公共接口或降低测试标准。
 15. 项目最初没有 mvnw、pom.xml 和业务模块。它们由 lesson/39 创建。validate 不能仅因这些尚未生成就失败，但必须验证它们会在后续使用前由 lesson/39 生成。
-16. loop.yaml 定义 `first` 和 `second` 两个阶段；`first` 包含 lesson39—lesson45，`second` 包含 lesson47—lesson52、发布候选验收和 lesson53 交付阶段。第 46 节负责创建 Runner，不在任何 phase 中再次执行。
-17. Runner 从建立时就支持 `--phase`。本节只运行 `first`；第 53 节运行 `second`，不需要到时重写 Runner。
-18. 合并 lesson/46 后立即在 master 执行 ./loop run --phase first。不要停下来等我输入命令，也不要只告诉我“下一步可以运行”。
-19. 持续运行，直到 lesson39 到 lesson45 全部完成、分别合并 master、第一阶段端到端验收通过并输出 FIRST PHASE COMPLETE。
-20. 如果进程中断但仓库和环境仍可用，直接再次执行 ./loop run --phase first，从保存的状态继续。
+16. loop.yaml 的正式业务阶段是 lesson39 到 lesson45；第 46 节负责创建和启动 Runner，不在正式 Loop 中再次执行。
+17. 合并 lesson/46 后立即在 master 执行 ./loop run。不要停下来等我输入命令，也不要只告诉我“下一步可以运行”。
+18. 持续运行，直到 lesson39 到 lesson45 全部完成、分别合并 master、最终端到端验收通过并输出 LOOP COMPLETE。
+19. 如果进程中断但仓库和环境仍可用，直接再次执行 ./loop run，从保存的状态继续。
 
-最终只向我报告：lesson/46 Runner 提交和合并结果、第 39—45 节的提交与合并结果、第一阶段验收证据、FIRST PHASE COMPLETE 状态和仍存在的客观风险。
+最终只向我报告：lesson/46 Runner 提交和合并结果、第 39—45 节的提交与合并结果、最终验收证据、LOOP COMPLETE 状态和仍存在的客观风险。
 ```
 
-这就是第 46 节唯一需要学员提交的提示词。Codex 内部会先检查 `AGENTS.md`、Runner、受保护验收入口、两个 phase 的 `loop.yaml` 和自身测试；检查通过后，它自己执行 `./loop run --phase first`。Runner 为每节课程自动生成的内部任务不算学员提示词，学员无需再发送“继续”“开始运行”或任何修复提示词。
+这就是第 46 节唯一需要学员提交的提示词。Codex 内部会先检查 `AGENTS.md`、Runner、受保护验收入口、`loop.yaml` 和自身测试；检查通过后，它自己执行正式的 `./loop run`。Runner 为每节课程自动生成的内部任务不算学员提示词，学员无需再发送“继续”“开始运行”或任何修复提示词。
 
 根目录的 `loop` 是 Shell 脚本，但它不承担循环逻辑：
 
@@ -151,7 +149,7 @@ lesson/42 → 验收 → 合并 master
 lesson/43 → 验收 → 合并 master
 lesson/44 → 验收 → 合并 master
 lesson/45 → 验收 → 合并 master
-第一阶段最终验收 → FIRST PHASE COMPLETE
+最终验收 → LOOP COMPLETE
 ```
 
 每一节的 Git 操作都相同：
@@ -185,16 +183,6 @@ git:
   merge_after_pass: true
   merge_strategy: no_ff
 
-phases:
-  first:
-    stages: [lesson39, lesson40, lesson41, lesson42, lesson43, lesson44, lesson45]
-    completion_message: FIRST PHASE COMPLETE
-  second:
-    requires_phase: first
-    stages: [lesson47, lesson48, lesson49, lesson50, lesson51, lesson52]
-    delivery_stage: lesson53
-    completion_message: SECOND PHASE COMPLETE
-
 stages:
   - id: lesson41
     lesson: 41
@@ -215,11 +203,11 @@ stages:
     judge: ./mvnw -q -pl when-timewheel -am verify
 ```
 
-其他课程使用相同结构。第 45 节把第一阶段成果接入 `when-app` 和验收模块；第 47—52 节属于 `second`，第 53 节是发布候选验收通过后的交付阶段。Runner 启动时必须验证：phase 依赖、课程依赖、文档、输出范围和验收命令。校验失败时不能调用 AI。
+其他课程使用相同结构。第 45 节除接入路由外，还负责把第 39—45 节成果接入 `when-app` 和第一阶段验收模块。Runner 启动时必须验证：课程依赖无环、文档存在、输出目录不冲突、验收命令可以执行。校验失败时不能调用 AI。
 
-## 6. `./loop run --phase first` 内部怎样循环
+## 6. `./loop run` 内部怎样循环
 
-每次执行 `./loop run --phase first`，Runner 固定完成以下动作：
+每次执行 `./loop run`，Runner 固定完成以下动作：
 
 1. 获取 `.loop/run.lock`，防止两个 Runner 同时修改仓库；
 2. 读取 `loop.yaml`、`.loop/state.json`，确认当前仓库没有无关修改；
@@ -313,23 +301,23 @@ Runner 不把实现问题转成确认问题。失败后先定位，再根据文�
 以下命令用于帮助学员理解屏幕输出，不需要再作为第二个提示词交给 Codex。Codex 在同一个任务中依次执行：
 
 ```bash
-./loop validate                 # 检查两个 phase、原料、依赖、验收命令和 Agent 适配器
-./loop plan --phase first       # 只显示第一阶段，不调用 AI、不修改代码
-./loop run --phase first        # 启动第一阶段
+./loop validate     # 检查配置、原料、课程依赖、验收命令和 Agent 适配器
+./loop plan         # 只显示将要执行的课程，不调用 AI、不修改代码
+./loop run          # 启动 Loop
 ```
 
 运行过程中，Codex 可以用下面的命令查看状态和失败证据：
 
 ```bash
-./loop status --phase first         # 当前课程、lesson 分支、已合并课程和尝试次数
+./loop status                       # 当前课程、lesson 分支、已合并课程和尝试次数
 ./loop logs --stage lesson44        # 第 44 节最近一次 AI 输出和验收结果
-./loop report --phase first         # 生成第一阶段报告
+./loop report                       # 生成本次运行报告
 ```
 
 如果执行进程意外中断，Codex 直接继续：
 
 ```bash
-./loop run --phase first
+./loop run
 ```
 
 同一条命令既用于首次运行，也用于恢复运行。Runner 自动跳过仍然有效且已经合并 `master` 的课程，从第一节未完成课程继续。整个过程仍属于最初那一个 Codex 任务。
@@ -344,8 +332,8 @@ Runner 不把实现问题转成确认问题。失败后先定位，再根据文�
 
 ```bash
 ./loop validate
-./loop plan --phase first
-./loop run --phase first
+./loop plan
+./loop run
 ```
 
 屏幕先显示课程顺序和分支，随后持续显示：
@@ -368,7 +356,7 @@ run_id | lesson | branch | status | attempt | judge
 另开终端查看：
 
 ```bash
-./loop status --phase first
+./loop status
 ./loop logs --stage lesson44
 ```
 
@@ -377,7 +365,7 @@ run_id | lesson | branch | status | attempt | judge
 在某节课程执行过程中按 `Ctrl+C`，然后再次执行：
 
 ```bash
-./loop run --phase first
+./loop run
 ```
 
 已经合并且指纹不变的课程显示 `SKIPPED(PASSED)`；Runner 检查当前 `lesson/{节号}` 分支和未提交修改，从该节继续。不能重跑全部课程，也不能新建同名分支覆盖现场。
@@ -399,13 +387,13 @@ harness/local/stop-deps.sh
 最后查看：
 
 ```bash
-./loop status --phase first
-./loop report --phase first
+./loop status
+./loop report
 ```
 
 ## 11. 怎么判定真的跑完
 
-Runner 只有同时跨过四道门，才输出 `FIRST PHASE COMPLETE` 并以退出码 0 结束：
+Runner 只有同时跨过四道门，才输出 `LOOP COMPLETE` 并以退出码 0 结束：
 
 1. `loop.yaml` 中第 39—45 节都仍然有效，并保持 `PASSED`；
 2. 每一节都存在对应的 `lesson/{节号}` 提交和 `master` merge commit，验收命令由 Runner 执行成功；
@@ -425,25 +413,25 @@ Runner 只有同时跨过四道门，才输出 `FIRST PHASE COMPLETE` 并以退�
 
 ## 12. 本节验收
 
-- [ ] 学员只提交一个提示词；同一个 Codex 任务先开发 Runner，再执行 `./loop run --phase first` 到 `FIRST PHASE COMPLETE`。
+- [ ] 学员只提交一个提示词；同一个 Codex 任务先开发 Runner，再执行 `./loop run` 到 `LOOP COMPLETE`。
 - [ ] 能从只有四份项目文档和课程资料的空项目开始，生成 `AGENTS.md`、受保护验收入口、Runner 和本地 Git 基线。
 - [ ] `validate` 允许 lesson/39 尚未创建的构建文件暂时不存在，但能验证它们会在后续使用前生成。
 - [ ] 不创建 Git Worktree；Runner 先在 `lesson/46` 开发并合并，正式 Loop 再依次使用 `lesson/39`—`lesson/45`，每节从最新 `master` 创建，通过后以 `--no-ff` 合并回 `master`。
 - [ ] 不调用 Docker、Docker Compose 或 Testcontainers；Redis、ETCD 使用本机临时进程完成验收并自动清理。
-- [ ] 仓库根存在可执行的 `./loop`，并提供 `validate`、`plan`、`run`、`status`、`logs`、`invalidate`、`report`；`plan/run/status/report` 支持 `--phase`。
+- [ ] 仓库根存在可执行的 `./loop`，并提供 `validate`、`plan`、`run`、`status`、`logs`、`invalidate`、`report`。
 - [ ] `./loop validate` 能发现文档缺失、课程依赖成环、输出范围冲突、验收命令不存在和 Agent 适配器不可用。
-- [ ] `./loop plan --phase first` 打印第 39—45 节；`./loop plan --phase second` 打印第 47—52 节、发布候选验收和第 53 节交付阶段；两者都不调用 AI、不修改代码。
-- [ ] 第一次 `./loop run --phase first` 从第 39 节开始；中断后再次运行从当前课程分支恢复。
+- [ ] `./loop plan` 打印第 39—45 节的唯一执行顺序和对应分支，不调用 AI、不修改代码。
+- [ ] 第一次 `./loop run` 从第 39 节开始；中断后再次运行从当前课程分支恢复。
 - [ ] 验收命令失败时在当前 lesson 分支根据文档自动修正，不询问用户，已合并课程不重跑。
 - [ ] `PASSED` 课程只有四项指纹一致且合并提交仍在 `master` 时才跳过；原料或公共契约变化会让当前及后续课程失效。
 - [ ] 普通实现、编译和测试问题不会进入确认等待；只有宿主机或仓库本身无法继续时才退出并报告原因。
-- [ ] 只有第一阶段课程都已合并 `master` 且最终端到端验收通过时，才输出 `FIRST PHASE COMPLETE` 和退出码 0。
+- [ ] 只有所有课程都已合并 `master` 且最终端到端验收通过时，才输出 `LOOP COMPLETE` 和退出码 0。
 - [ ] 最终报告可以追溯每节课程的输入、输出、尝试、验收命令、课程提交、合并提交和失败证据。
 
 ## 13. 交付物
 
 - [ ] 根目录可执行入口 `./loop`。
-- [ ] `loop.yaml` 包含 `first` 与 `second` 两个阶段。
+- [ ] `loop.yaml` 完整课程清单。
 - [ ] `harness/loop/loop_runner.py` 和 Agent Adapter。
 - [ ] `.loop/state.json` schema、原子写入和运行锁。
 - [ ] 课程报告、失败证据、lesson commit、master merge commit 和最终报告。
