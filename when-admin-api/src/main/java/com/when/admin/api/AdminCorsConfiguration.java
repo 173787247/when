@@ -7,7 +7,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /** Explicit trusted-origin CORS policy. A wildcard is rejected instead of silently accepted. */
-@Configuration(proxyBeanMethods = false)
+@Configuration
 public final class AdminCorsConfiguration implements WebMvcConfigurer {
     private final List<String> allowedOrigins;
 

@@ -22,7 +22,5 @@ when:
   sinks:
     kafka:
       bootstrap-servers: ${WHEN_KAFKA_BOOTSTRAP_SERVERS:}
-    file:
-      base-directory: ${WHEN_FILE_SINK_BASE_DIR:}
   observability:
     otlp-endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:}
