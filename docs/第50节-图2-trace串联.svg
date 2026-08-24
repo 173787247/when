@@ -4,29 +4,29 @@
   <defs>
     <marker id="tr-amber" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f59e0b"/></marker>
   </defs>
-  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　延时消息使用两条短 Trace，通过 Span Link 保留因果关系</text>
+  <text x="20" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#334155">图 2　trace_id 串起一条消息的一生（跨节点也追得到）</text>
 
   <!-- nodeA -->
   <rect x="30" y="70" width="360" height="130" rx="10" fill="#eef2ff" stroke="#6366f1" stroke-width="2"/>
-  <text x="50" y="94" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#4338ca">节点 A（Submit Trace）</text>
-  <text x="50" y="120" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">提取 traceparent → when.submit Span</text>
-  <text x="50" y="142" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">存储 / 路由 / gRPC 形成父子 Span</text>
-  <text x="50" y="164" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">持久化 origin Trace Context → 结束 Trace</text>
-  <text x="50" y="186" font-family="Arial, sans-serif" font-size="10" fill="#64748b">日志自动带 {trace_id, span_id, node_id, event}</text>
+  <text x="50" y="94" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#4338ca">节点 A（接入）</text>
+  <text x="50" y="120" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">收到 Submit → 生成 trace_id</text>
+  <text x="50" y="142" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">放进 SLF4J MDC → 本节点日志都带</text>
+  <text x="50" y="164" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">跨节点调用：trace_id 放进 gRPC metadata</text>
+  <text x="50" y="186" font-family="Arial, sans-serif" font-size="10" fill="#64748b">{trace_id, node_id, message_id, msg, duration_ms}</text>
 
   <!-- nodeB -->
   <rect x="470" y="70" width="360" height="130" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
-  <text x="490" y="94" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#15803d">节点 B（Delivery Trace）</text>
-  <text x="490" y="120" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">到期后创建新的 when.deliver Trace</text>
-  <text x="490" y="142" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">Span Link 指向原 Submit Context</text>
-  <text x="490" y="164" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">Sink 子 Span + trace_id/span_id 日志</text>
+  <text x="490" y="94" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#15803d">节点 B（时间轮 Master / 投递）</text>
+  <text x="490" y="120" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">从 metadata 取 trace_id → 放本节点 MDC</text>
+  <text x="490" y="142" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">调度 / 投递日志 → 同一个 trace_id</text>
+  <text x="490" y="164" font-family="Arial, sans-serif" font-size="10.5" fill="#334155">出问题：按 trace_id 一拉，全程可见</text>
 
   <line x1="390" y1="135" x2="468" y2="135" stroke="#f59e0b" stroke-width="2.4" marker-end="url(#tr-amber)"/>
-  <text x="400" y="126" font-family="Arial, sans-serif" font-size="10" fill="#b45309">Span Link</text>
+  <text x="400" y="126" font-family="Arial, sans-serif" font-size="10" fill="#b45309">gRPC metadata</text>
 
   <!-- health -->
   <rect x="30" y="235" width="800" height="70" rx="9" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
   <text x="48" y="259" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#334155">健康检查两个端点</text>
-  <text x="48" y="283" font-family="Arial, sans-serif" font-size="11" fill="#334155">/health：进程事件循环正常即 200　·　/ready：初始化、依赖、注册和本地角色恢复完成才 200</text>
-  <text x="48" y="299" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b">没有本地 Master、但能够正常转发的节点仍可就绪；依赖异常时 /ready 返回 503 和固定原因码。</text>
+  <text x="48" y="283" font-family="Arial, sans-serif" font-size="11" fill="#334155">/health（liveness）：进程活着就 200　·　/ready（readiness）：ETCD/Redis 连上 + 至少一个时间轮在调度，才 200</text>
+  <text x="48" y="299" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b">/ready 不 OK 返回 503 → K8s 自动把节点从负载均衡摘掉，好了再加回来。</text>
 </svg>
