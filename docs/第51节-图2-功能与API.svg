@@ -15,31 +15,30 @@
     <text x="140" y="104" font-size="11.5" font-weight="bold" fill="#4338ca" text-anchor="middle">查看时间轮</text>
     <text x="140" y="122" font-size="9.5" fill="#64748b" text-anchor="middle">Master/Slave/状态/消息数</text>
     <rect x="430" y="80" width="400" height="52" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="450" y="110" font-size="11.5" fill="#b45309">GET /admin/v1/timewheels</text>
+    <text x="450" y="110" font-size="11.5" fill="#b45309">GET /admin/timewheels</text>
 
     <rect x="30" y="146" width="220" height="52" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
     <text x="140" y="170" font-size="11.5" font-weight="bold" fill="#4338ca" text-anchor="middle">创建时间轮</text>
     <text x="140" y="188" font-size="9.5" fill="#64748b" text-anchor="middle">→ Controller 分配 M/S</text>
     <rect x="430" y="146" width="400" height="52" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="450" y="170" font-size="11.5" fill="#b45309">POST /admin/v1/timewheels</text>
-    <text x="450" y="188" font-size="9.5" fill="#64748b">Idempotency-Key + body:{count}</text>
+    <text x="450" y="176" font-size="11.5" fill="#b45309">POST /admin/timewheels</text>
 
     <rect x="30" y="212" width="220" height="52" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
     <text x="140" y="236" font-size="11.5" font-weight="bold" fill="#4338ca" text-anchor="middle">查看延时消息（列表）</text>
     <text x="140" y="254" font-size="9.5" fill="#64748b" text-anchor="middle">按状态/标签/时间筛选</text>
     <rect x="430" y="212" width="400" height="52" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="450" y="242" font-size="11.5" fill="#b45309">GET /admin/v1/messages?status=&amp;tag=</text>
+    <text x="450" y="242" font-size="11.5" fill="#b45309">GET /admin/messages?status=&amp;tag=</text>
 
     <rect x="30" y="278" width="220" height="52" rx="8" fill="#e0e7ff" stroke="#6366f1" stroke-width="2"/>
     <text x="140" y="302" font-size="11.5" font-weight="bold" fill="#4338ca" text-anchor="middle">消息详情 / 投递日志</text>
     <text x="140" y="320" font-size="9.5" fill="#64748b" text-anchor="middle">状态时间线、重试记录</text>
     <rect x="430" y="278" width="400" height="52" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
-    <text x="450" y="308" font-size="11.5" fill="#b45309">GET /admin/v1/messages/{id}</text>
+    <text x="450" y="308" font-size="11.5" fill="#b45309">GET /admin/messages/{id}</text>
 
     <rect x="30" y="344" width="220" height="44" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
     <text x="140" y="371" font-size="11.5" font-weight="bold" fill="#475569" text-anchor="middle">集群节点</text>
     <rect x="430" y="344" width="400" height="44" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="2"/>
-    <text x="450" y="371" font-size="11.5" fill="#475569">GET /admin/v1/cluster/nodes</text>
+    <text x="450" y="371" font-size="11.5" fill="#475569">GET /admin/cluster/nodes</text>
   </g>
 
   <line x1="250" y1="106" x2="428" y2="106" stroke="#f59e0b" stroke-width="1.8" marker-end="url(#m2-amber)"/>

@@ -10,7 +10,6 @@ import com.when.api.application.SubmitResult;
 import com.when.core.ClusterView;
 import com.when.core.HttpSinkConfig;
 import com.when.core.KafkaSinkConfig;
-import com.when.core.FileSinkConfig;
 import com.when.core.Message;
 import com.when.core.MessageStatus;
 import com.when.core.NodeEndpoint;
@@ -20,21 +19,10 @@ import com.when.core.StoragePlugin;
 import com.when.core.TimeWheel;
 import com.when.core.TimeWheelRegistry;
 import com.when.ingress.id.MessageIdGenerator;
-import com.when.observability.ErrorCode;
-import com.when.observability.LogEvent;
-import com.when.observability.Metrics;
-import com.when.observability.StructuredEventLogger;
-import com.when.observability.TraceAttributes;
-import com.when.observability.TraceContextSnapshot;
-import com.when.observability.TraceContextStore;
-import com.when.observability.TraceOperations;
-import com.when.observability.TraceSpanKind;
-import com.when.observability.WhenMetrics;
 import java.net.URI;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Objects;
-import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -52,10 +40,6 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
     private final DelayMessageForwarder forwarder;
     private final Clock clock;
     private final Supplier<String> traceIdGenerator;
-    private final Metrics metrics;
-    private final TraceOperations traces;
-    private final TraceContextStore traceContexts;
-    private final StructuredEventLogger events;
 
     public DefaultDelayMessageHandler(
             String localNodeId,
@@ -74,11 +58,7 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
                 storage,
                 forwarder,
                 Clock.systemUTC(),
-                () -> UUID.randomUUID().toString(),
-                Metrics.noop(),
-                TraceOperations.noop(),
-                TraceContextStore.noop(),
-                new StructuredEventLogger(DefaultDelayMessageHandler.class, "when", localNodeId));
+                () -> UUID.randomUUID().toString());
     }
 
     public DefaultDelayMessageHandler(
@@ -91,36 +71,6 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
             DelayMessageForwarder forwarder,
             Clock clock,
             Supplier<String> traceIdGenerator) {
-        this(
-                localNodeId,
-                idGenerator,
-                router,
-                clusterView,
-                timeWheels,
-                storage,
-                forwarder,
-                clock,
-                traceIdGenerator,
-                Metrics.noop(),
-                TraceOperations.noop(),
-                TraceContextStore.noop(),
-                new StructuredEventLogger(DefaultDelayMessageHandler.class, "when", localNodeId));
-    }
-
-    public DefaultDelayMessageHandler(
-            String localNodeId,
-            MessageIdGenerator idGenerator,
-            Router router,
-            ClusterView clusterView,
-            TimeWheelRegistry timeWheels,
-            StoragePlugin storage,
-            DelayMessageForwarder forwarder,
-            Clock clock,
-            Supplier<String> traceIdGenerator,
-            Metrics metrics,
-            TraceOperations traces,
-            TraceContextStore traceContexts,
-            StructuredEventLogger events) {
         this.localNodeId = requireText(localNodeId, "localNodeId");
         this.idGenerator = Objects.requireNonNull(idGenerator, "idGenerator");
         this.router = Objects.requireNonNull(router, "router");
@@ -130,36 +80,15 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
         this.forwarder = Objects.requireNonNull(forwarder, "forwarder");
         this.clock = Objects.requireNonNull(clock, "clock");
         this.traceIdGenerator = Objects.requireNonNull(traceIdGenerator, "traceIdGenerator");
-        this.metrics = Objects.requireNonNull(metrics, "metrics");
-        this.traces = Objects.requireNonNull(traces, "traces");
-        this.traceContexts = Objects.requireNonNull(traceContexts, "traceContexts");
-        this.events = Objects.requireNonNull(events, "events");
     }
 
     @Override
     public SubmitResult submit(SubmitCommand command) {
-        String sinkType = command == null || command.sinkType() == null
-                ? "unknown"
-                : command.sinkType().name().toLowerCase(java.util.Locale.ROOT);
-        return traces.inSpan(
-                "when.submit",
-                TraceSpanKind.SERVER,
-                TraceAttributes.of("when.sink.type", sinkType),
-                () -> doSubmit(command));
-    }
-
-    private SubmitResult doSubmit(SubmitCommand command) {
         validate(command);
         ForwardingContext.RoutedIdentity forwarded = ForwardingContext.current();
         String messageId = forwarded == null ? requireText(idGenerator.nextId(), "messageId") : forwarded.messageId();
-        TraceContextSnapshot currentTrace = traces.currentContext();
-        String traceId = forwarded == null
-                ? currentTrace.valid() ? currentTrace.traceId() : requireText(traceIdGenerator.get(), "traceId")
-                : forwarded.traceId();
-        String canonicalTimeWheelId = traces.inSpan(
-                "when.route",
-                TraceAttributes.of("when.route.result", "selected"),
-                () -> requireText(router.routeToTimeWheel(messageId), "timeWheelId"));
+        String traceId = forwarded == null ? requireText(traceIdGenerator.get(), "traceId") : forwarded.traceId();
+        String canonicalTimeWheelId = requireText(router.routeToTimeWheel(messageId), "timeWheelId");
         String timeWheelId = forwarded == null ? canonicalTimeWheelId : forwarded.timeWheelId();
         if (!timeWheelId.equals(canonicalTimeWheelId)) {
             throw new IngressValidationException("forwarded time wheel does not match message route");
@@ -189,31 +118,12 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
                 null,
                 traceId);
         storage.create(message);
-        persistTraceContext(messageId, currentTrace);
         wheel.add(message);
-        metrics.incr(
-                WhenMetrics.MESSAGES_SUBMITTED,
-                "sink_type", command.sinkType().name().toLowerCase(java.util.Locale.ROOT));
-        events.info(
-                LogEvent.MESSAGE_SUBMITTED,
-                "message accepted for delayed delivery",
-                Map.of(
-                        "message_id", messageId,
-                        "tw_id", timeWheelId,
-                        "sink_type", command.sinkType().name()));
         return new SubmitResult(messageId, MessageStatus.PENDING, command.deliverAt());
     }
 
     @Override
     public MessageView query(String messageId) {
-        return traces.inSpan(
-                "when.query",
-                TraceSpanKind.SERVER,
-                TraceAttributes.EMPTY,
-                () -> doQuery(messageId));
-    }
-
-    private MessageView doQuery(String messageId) {
         Message message = storage.get(requireText(messageId, "messageId"))
                 .orElseThrow(() -> new MessageNotFoundException(messageId));
         return view(message);
@@ -221,14 +131,6 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
 
     @Override
     public CancelResult cancel(String messageId) {
-        return traces.inSpan(
-                "when.cancel",
-                TraceSpanKind.SERVER,
-                TraceAttributes.EMPTY,
-                () -> doCancel(messageId));
-    }
-
-    private CancelResult doCancel(String messageId) {
         String requiredId = requireText(messageId, "messageId");
         Message message = storage.get(requiredId)
                 .orElseThrow(() -> new MessageNotFoundException(requiredId));
@@ -249,26 +151,7 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
             throw new CancellationRejectedException();
         }
         wheel.remove(requiredId);
-        events.info(
-                LogEvent.MESSAGE_CANCELLED,
-                "pending message cancelled",
-                Map.of("message_id", requiredId, "tw_id", message.timeWheelId()));
         return new CancelResult(requiredId, MessageStatus.CANCELLED);
-    }
-
-    private void persistTraceContext(String messageId, TraceContextSnapshot context) {
-        if (!context.valid()) {
-            return;
-        }
-        try {
-            traceContexts.put(messageId, context);
-        } catch (RuntimeException failure) {
-            events.warn(
-                    LogEvent.TRACE_EXPORT_FAILED,
-                    ErrorCode.EXPORT_FAILED,
-                    "submit trace context could not be persisted",
-                    Map.of("message_id", messageId, "operation", "trace_context_put"));
-        }
     }
 
     private NodeEndpoint masterOf(String timeWheelId) {
@@ -302,7 +185,6 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
         switch (command.sinkType()) {
             case HTTP -> validateHttp(command.sinkConfig());
             case KAFKA -> validateKafka(command.sinkConfig());
-            case FILE -> validateFile(command.sinkConfig());
         }
     }
 
@@ -336,13 +218,6 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
         }
         if (config.topic() == null || config.topic().isBlank()) {
             throw new IngressValidationException("Kafka topic is required");
-        }
-    }
-
-    private static void validateFile(Object value) {
-        if (!(value instanceof FileSinkConfig config)
-                || config.path() == null || config.path().isBlank()) {
-            throw new IngressValidationException("File sink path is required");
         }
     }
 

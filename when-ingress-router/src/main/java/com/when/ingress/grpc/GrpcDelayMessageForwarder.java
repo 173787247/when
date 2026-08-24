@@ -21,10 +21,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import com.when.observability.TraceOperations;
-import com.when.observability.TraceAttributes;
-import com.when.observability.TraceSpanKind;
-import com.when.observability.grpc.GrpcTraceClientInterceptor;
 
 /** Bounded, channel-reusing gRPC implementation of the internal forwarding boundary. */
 public final class GrpcDelayMessageForwarder implements DelayMessageForwarder {
@@ -32,7 +28,6 @@ public final class GrpcDelayMessageForwarder implements DelayMessageForwarder {
 
     private final Duration timeout;
     private final Function<NodeEndpoint, ManagedChannel> channelFactory;
-    private final TraceOperations traces;
     private final Map<Address, ManagedChannel> channels = new ConcurrentHashMap<>();
 
     public GrpcDelayMessageForwarder() {
@@ -43,43 +38,33 @@ public final class GrpcDelayMessageForwarder implements DelayMessageForwarder {
         this(timeout, endpoint -> ManagedChannelBuilder
                 .forAddress(endpoint.host(), endpoint.grpcPort())
                 .usePlaintext()
-                .build(), TraceOperations.noop());
+                .build());
     }
 
     /** Alternate channel factory supports deterministic in-process acceptance without sockets. */
     public GrpcDelayMessageForwarder(
             Duration timeout, Function<NodeEndpoint, ManagedChannel> channelFactory) {
-        this(timeout, channelFactory, TraceOperations.noop());
-    }
-
-    public GrpcDelayMessageForwarder(
-            Duration timeout,
-            Function<NodeEndpoint, ManagedChannel> channelFactory,
-            TraceOperations traces) {
         this.timeout = Objects.requireNonNull(timeout, "timeout");
         if (timeout.isZero() || timeout.isNegative() || timeout.toMillis() < 1) {
             throw new IllegalArgumentException("timeout must be at least one millisecond");
         }
         this.channelFactory = Objects.requireNonNull(channelFactory, "channelFactory");
-        this.traces = Objects.requireNonNull(traces, "traces");
     }
 
     @Override
     public SubmitResult submit(NodeEndpoint endpoint, RoutedSubmit submit) {
         Objects.requireNonNull(submit, "submit");
-        return forwardSpan(endpoint, "submit", () -> {
-            Metadata identity = new Metadata();
-            identity.put(ForwardingServerInterceptor.MESSAGE_ID, submit.messageId());
-            identity.put(ForwardingServerInterceptor.TRACE_ID, submit.traceId());
-            identity.put(ForwardingServerInterceptor.TIME_WHEEL_ID, submit.timeWheelId());
-            var response = stub(endpoint)
-                    .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(identity))
-                    .submit(GrpcMessageMapper.toRequest(submit.command()));
-            return new SubmitResult(
-                    response.getMessageId(),
-                    GrpcMessageMapper.fromProto(response.getStatus()),
-                    response.getDeliverAt());
-        });
+        Metadata identity = new Metadata();
+        identity.put(ForwardingServerInterceptor.MESSAGE_ID, submit.messageId());
+        identity.put(ForwardingServerInterceptor.TRACE_ID, submit.traceId());
+        identity.put(ForwardingServerInterceptor.TIME_WHEEL_ID, submit.timeWheelId());
+        var response = stub(endpoint)
+                .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(identity))
+                .submit(GrpcMessageMapper.toRequest(submit.command()));
+        return new SubmitResult(
+                response.getMessageId(),
+                GrpcMessageMapper.fromProto(response.getStatus()),
+                response.getDeliverAt());
     }
 
     @Override
@@ -87,22 +72,20 @@ public final class GrpcDelayMessageForwarder implements DelayMessageForwarder {
         if (messageId == null || messageId.isBlank()) {
             throw new IllegalArgumentException("messageId must not be blank");
         }
-        return forwardSpan(endpoint, "cancel", () -> {
-            try {
-                var response = stub(endpoint).cancel(
-                        CancelRequest.newBuilder().setMessageId(messageId).build());
-                return new CancelResult(
-                        response.getMessageId(), GrpcMessageMapper.fromProto(response.getStatus()));
-            } catch (StatusRuntimeException exception) {
-                if (exception.getStatus().getCode() == Status.Code.NOT_FOUND) {
-                    throw new MessageNotFoundException(messageId);
-                }
-                if (exception.getStatus().getCode() == Status.Code.FAILED_PRECONDITION) {
-                    throw new CancellationRejectedException();
-                }
-                throw exception;
+        try {
+            var response = stub(endpoint).cancel(
+                    CancelRequest.newBuilder().setMessageId(messageId).build());
+            return new CancelResult(
+                    response.getMessageId(), GrpcMessageMapper.fromProto(response.getStatus()));
+        } catch (StatusRuntimeException exception) {
+            if (exception.getStatus().getCode() == Status.Code.NOT_FOUND) {
+                throw new MessageNotFoundException(messageId);
             }
-        });
+            if (exception.getStatus().getCode() == Status.Code.FAILED_PRECONDITION) {
+                throw new CancellationRejectedException();
+            }
+            throw exception;
+        }
     }
 
     @Override
@@ -126,21 +109,7 @@ public final class GrpcDelayMessageForwarder implements DelayMessageForwarder {
         ManagedChannel channel = channels.computeIfAbsent(address, key ->
                 Objects.requireNonNull(channelFactory.apply(endpoint), "channelFactory returned null"));
         return DelayMessageServiceGrpc.newBlockingStub(channel)
-                .withInterceptors(new GrpcTraceClientInterceptor(traces))
                 .withDeadlineAfter(timeout.toMillis(), TimeUnit.MILLISECONDS);
-    }
-
-    private <T> T forwardSpan(
-            NodeEndpoint endpoint, String operation, java.util.function.Supplier<T> action) {
-        Objects.requireNonNull(endpoint, "endpoint");
-        return traces.inSpan(
-                "when.forward",
-                TraceSpanKind.CLIENT,
-                TraceAttributes.of(
-                        "rpc.system", "grpc",
-                        "rpc.method", operation,
-                        "server.address", endpoint.host()),
-                action);
     }
 
     private record Address(String host, int port) {
