@@ -3,31 +3,22 @@
 # requested, synchronize that snapshot to the same branch in a remote Git checkout.
 #
 # Usage:
-#   ./scripts/package.sh [--execute]
+#   ./scripts/package.sh [--execute] [output_dir]
 #
-# The remote synchronization target is fixed for this repository:
-#   root@117.72.92.117:/root/when
+# Required only with --execute:
+#   WHEN_PACKAGE_DEPLOY_HOST  SSH host or SSH config alias
+#   WHEN_PACKAGE_DEPLOY_DIR   Absolute path of the remote When Git checkout
 #
 # The archive contains tracked files plus untracked files that are not ignored. It excludes
-# .gitignore matches even when a path is already tracked, .git/, dist/, and tar.gz archives.
-# The remote operation never runs unless --execute is supplied.
+# .gitignore matches even when a path is already tracked, .git/, and tar.gz archives. The
+# remote operation never runs unless --execute is supplied.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 EXECUTE=0
-REMOTE_HOST="root@117.72.92.117"
-REMOTE_DIR="/root/when"
-# Snapshot publishing must never wait for an interactive host-key, SSH-password, or
-# Git-credential prompt. Authentication must be configured on the invoking host and
-# on the remote checkout before --execute is used.
-SSH_OPTIONS=(
-  -o BatchMode=yes
-  -o StrictHostKeyChecking=accept-new
-  -o ConnectTimeout=20
-  -o ConnectionAttempts=1
-)
+OUTPUT_DIR="$PROJECT_ROOT"
 
 info() { printf '[INFO]  %s\n' "$*"; }
 warn() { printf '[WARN]  %s\n' "$*" >&2; }
@@ -35,12 +26,15 @@ error() { printf '[ERROR] %s\n' "$*" >&2; }
 
 usage() {
   cat <<'USAGE'
-Usage: ./scripts/package.sh [--execute]
+Usage: ./scripts/package.sh [--execute] [output_dir]
 
-Without --execute, create a temporary tar.gz and validate the local packaging flow.
+Without --execute, create and keep a local tar.gz only.
 With --execute, also commit the packageable local paths, upload the archive, extract it
-into the same-name branch at root@117.72.92.117:/root/when, commit there, and push it.
-The local tar.gz is always removed when the script exits.
+into the remote same-name branch, commit there, and push it.
+
+Required with --execute:
+  WHEN_PACKAGE_DEPLOY_HOST  SSH host or SSH config alias
+  WHEN_PACKAGE_DEPLOY_DIR   Absolute remote Git checkout path
 USAGE
 }
 
@@ -60,9 +54,13 @@ while [[ $# -gt 0 ]]; do
       exit 2
       ;;
     *)
-      error "unexpected argument: $1"
-      usage >&2
-      exit 2
+      if [[ "$OUTPUT_DIR" != "$PROJECT_ROOT" ]]; then
+        error "only one output directory may be supplied"
+        usage >&2
+        exit 2
+      fi
+      OUTPUT_DIR="$1"
+      shift
       ;;
   esac
 done
@@ -75,18 +73,28 @@ LOCAL_BRANCH="$(git -C "$PROJECT_ROOT" symbolic-ref --quiet --short HEAD || true
 git -C "$PROJECT_ROOT" check-ref-format --branch "$LOCAL_BRANCH" >/dev/null \
   || { error "invalid current branch name: $LOCAL_BRANCH"; exit 1; }
 
+if [[ "$EXECUTE" -eq 1 ]]; then
+  REMOTE_HOST="${WHEN_PACKAGE_DEPLOY_HOST:-}"
+  REMOTE_DIR="${WHEN_PACKAGE_DEPLOY_DIR:-}"
+  [[ -n "$REMOTE_HOST" ]] || { error "WHEN_PACKAGE_DEPLOY_HOST is required with --execute"; exit 1; }
+  [[ -n "$REMOTE_DIR" && "$REMOTE_DIR" = /* ]] \
+    || { error "WHEN_PACKAGE_DEPLOY_DIR must be an absolute remote path with --execute"; exit 1; }
+fi
+
+mkdir -p "$OUTPUT_DIR"
+OUTPUT_DIR="$(cd "$OUTPUT_DIR" && pwd)"
+
 VERSION="$(git -C "$PROJECT_ROOT" describe --tags --always --dirty 2>/dev/null || printf 'dev')"
 SAFE_BRANCH="${LOCAL_BRANCH//\//-}"
 SAFE_VERSION="$(printf '%s' "$VERSION" | tr '/[:space:]' '--')"
 TIMESTAMP="$(date +%Y%m%d%H%M%S)_$$"
+ARCHIVE="$OUTPUT_DIR/when-${SAFE_BRANCH}-${SAFE_VERSION}-${TIMESTAMP}.tar.gz"
+ARCHIVE_NAME="$(basename "$ARCHIVE")"
 
 WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/when-package.XXXXXX")"
-ARCHIVE="$WORK_DIR/when-${SAFE_BRANCH}-${SAFE_VERSION}-${TIMESTAMP}.tar.gz"
-ARCHIVE_NAME="$(basename "$ARCHIVE")"
 MANIFEST="$WORK_DIR/files.nul"
 DELETED_MANIFEST="$WORK_DIR/deleted.nul"
 PATHS_TO_COMMIT="$WORK_DIR/paths-to-commit.nul"
-: > "$DELETED_MANIFEST"
 
 cleanup() {
   rm -rf "$WORK_DIR"
@@ -98,17 +106,11 @@ is_gitignored() {
   git -C "$PROJECT_ROOT" check-ignore --no-index -q -- "$1"
 }
 
-is_excluded_from_snapshot() {
-  local path="$1"
-  [[ "$path" == dist || "$path" == dist/* ]]
-}
-
 append_if_packageable() {
   local path="$1"
   [[ -n "$path" ]] || return 0
   [[ "$path" != .git/* ]] || return 0
   [[ "$path" != *.tar.gz ]] || return 0
-  is_excluded_from_snapshot "$path" && return 0
   is_gitignored "$path" && return 0
   printf '%s\0' "$path" >> "$MANIFEST"
 }
@@ -122,7 +124,6 @@ done < <(git -C "$PROJECT_ROOT" ls-files --cached --others --exclude-standard -z
 while IFS= read -r -d '' path; do
   [[ -n "$path" && ! -e "$PROJECT_ROOT/$path" ]] || continue
   [[ "$path" != .git/* ]] || continue
-  is_excluded_from_snapshot "$path" && continue
   is_gitignored "$path" && continue
   printf '%s\0' "$path" >> "$DELETED_MANIFEST"
 done < <(
@@ -143,13 +144,11 @@ info "Current branch: $LOCAL_BRANCH"
 info "Packageable files: $file_count"
 info "Deleted paths to mirror: $deleted_count"
 info "Creating archive: $ARCHIVE"
-COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata \
-  -czf "$ARCHIVE" -C "$PROJECT_ROOT" --null -T "$MANIFEST"
+COPYFILE_DISABLE=1 tar -czf "$ARCHIVE" -C "$PROJECT_ROOT" --null -T "$MANIFEST"
 info "Archive created ($(du -h "$ARCHIVE" | awk '{print $1}'))"
 
 if [[ "$EXECUTE" -eq 0 ]]; then
-  info "Local packaging flow complete. The temporary archive will be removed on exit."
-  info "Use --execute to synchronize to $REMOTE_HOST:$REMOTE_DIR."
+  info "Local package complete. Use --execute to synchronize it to a remote checkout."
   exit 0
 fi
 
@@ -174,11 +173,10 @@ fi
 COMMIT_MESSAGE_B64="$(printf '%s' "$COMMIT_MESSAGE" | base64 | tr -d '\n')"
 
 info "Uploading $ARCHIVE_NAME to $REMOTE_HOST:$REMOTE_DIR"
-scp "${SSH_OPTIONS[@]}" "$ARCHIVE" "$REMOTE_HOST:$REMOTE_DIR/$ARCHIVE_NAME"
-info "Upload complete. Starting remote branch synchronization."
+scp "$ARCHIVE" "$REMOTE_HOST:$REMOTE_DIR/$ARCHIVE_NAME"
 
 info "Synchronizing remote branch $LOCAL_BRANCH"
-ssh "${SSH_OPTIONS[@]}" "$REMOTE_HOST" \
+ssh "$REMOTE_HOST" \
   REMOTE_DIR="$REMOTE_DIR" \
   LOCAL_BRANCH="$LOCAL_BRANCH" \
   ARCHIVE_NAME="$ARCHIVE_NAME" \
@@ -186,7 +184,6 @@ ssh "${SSH_OPTIONS[@]}" "$REMOTE_HOST" \
   COMMIT_MESSAGE_B64="$COMMIT_MESSAGE_B64" \
   'bash -s' <<'REMOTE_SCRIPT'
 set -euo pipefail
-export GIT_TERMINAL_PROMPT=0
 
 info() { printf '[INFO]  %s\n' "$*"; }
 error() { printf '[ERROR] %s\n' "$*" >&2; }
@@ -198,47 +195,27 @@ git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
 git check-ref-format --branch "$LOCAL_BRANCH" >/dev/null \
   || { error "invalid branch name"; exit 1; }
 
-# dist/ is intentionally outside a source snapshot. Its remote removal is therefore
-# allowed and will be included in the remote commit, rather than blocking the sync.
-remote_dirty="$(git status --porcelain --untracked-files=all | awk -v archive="$ARCHIVE_NAME" '
-  $0 == "?? " archive { next }
-  {
-    path = substr($0, 4)
-    if (path == "dist" || path ~ /^dist\//) { next }
-    print
-  }
-')"
+remote_dirty="$(git status --porcelain --untracked-files=all | awk -v archive="$ARCHIVE_NAME" '$0 != "?? " archive')"
 if [[ -n "$remote_dirty" ]]; then
   error "remote working tree is not clean; refusing to overwrite it"
-  printf '%s\n' "$remote_dirty" >&2
   exit 1
 fi
 
-info "Fetching remote refs"
 git fetch origin
 if git show-ref --verify --quiet "refs/heads/$LOCAL_BRANCH"; then
-  info "Checking out existing local branch: $LOCAL_BRANCH"
   git checkout "$LOCAL_BRANCH"
 elif git show-ref --verify --quiet "refs/remotes/origin/$LOCAL_BRANCH"; then
-  info "Creating local branch from origin: $LOCAL_BRANCH"
   git checkout -b "$LOCAL_BRANCH" "origin/$LOCAL_BRANCH"
 else
-  info "Creating new local branch: $LOCAL_BRANCH"
   git checkout -b "$LOCAL_BRANCH"
 fi
 
 if git show-ref --verify --quiet "refs/remotes/origin/$LOCAL_BRANCH"; then
-  info "Fast-forwarding remote checkout from origin/$LOCAL_BRANCH"
   git pull --ff-only origin "$LOCAL_BRANCH"
 fi
 
 [[ -f "$ARCHIVE_NAME" ]] || { error "uploaded archive is missing: $ARCHIVE_NAME"; exit 1; }
-info "Extracting uploaded snapshot"
-if tar --warning=no-unknown-keyword -cf /dev/null --files-from /dev/null >/dev/null 2>&1; then
-  tar --warning=no-unknown-keyword -xzf "$ARCHIVE_NAME"
-else
-  tar -xzf "$ARCHIVE_NAME"
-fi
+tar -xzf "$ARCHIVE_NAME"
 rm -f "$ARCHIVE_NAME"
 
 deleted_file="$(mktemp)"
@@ -263,13 +240,12 @@ else
   commit_message="$(printf '%s' "$COMMIT_MESSAGE_B64" | base64 -d)"
   [[ -n "$commit_message" ]] || commit_message='chore: sync branch snapshot'
   git commit -m "$commit_message"
-  info "Pushing remote branch: $LOCAL_BRANCH"
   git push origin "$LOCAL_BRANCH"
   info "Remote branch pushed: $LOCAL_BRANCH"
 fi
 REMOTE_SCRIPT
 
-info "Remote sync complete. The temporary archive will be removed on exit."
+info "Remote sync complete. Archive retained locally: $ARCHIVE"
 if git -C "$PROJECT_ROOT" fetch origin "$LOCAL_BRANCH" --quiet; then
   if git -C "$PROJECT_ROOT" diff --quiet "origin/$LOCAL_BRANCH" HEAD; then
     warn "local and remote trees match but may have different commit IDs; no destructive reset was performed"
