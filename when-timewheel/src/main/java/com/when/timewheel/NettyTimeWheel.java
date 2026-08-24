@@ -14,6 +14,10 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import com.when.observability.Metrics;
+import com.when.observability.TraceAttributes;
+import com.when.observability.TraceOperations;
+import com.when.observability.WhenMetrics;
 
 /**
  * One isolated logical time wheel backed by a dedicated {@link NettyTimerBackend} and bounded due
@@ -36,6 +40,8 @@ public final class NettyTimeWheel implements TimeWheel, AutoCloseable {
     private final TimerBackend timerBackend;
     private final ThreadPoolExecutor dueExecutor;
     private final long maxPendingTimeouts;
+    private final Metrics metrics;
+    private final TraceOperations traces;
     private final Object mutationLock = new Object();
     private final Map<String, ScheduledEntry> handles = new HashMap<>();
     private final AtomicLong generation = new AtomicLong();
@@ -44,18 +50,30 @@ public final class NettyTimeWheel implements TimeWheel, AutoCloseable {
     private Lifecycle lifecycle = Lifecycle.NEW;
 
     public NettyTimeWheel(String id, DueMessageHandler dueHandler) {
-        this(id, dueHandler, Clock.systemUTC(), TimeWheelConfig.defaults());
+        this(id, dueHandler, Clock.systemUTC(), TimeWheelConfig.defaults(), Metrics.noop(), TraceOperations.noop());
     }
 
     public NettyTimeWheel(
             String id, DueMessageHandler dueHandler, Clock clock, TimeWheelConfig config) {
+        this(id, dueHandler, clock, config, Metrics.noop(), TraceOperations.noop());
+    }
+
+    public NettyTimeWheel(
+            String id,
+            DueMessageHandler dueHandler,
+            Clock clock,
+            TimeWheelConfig config,
+            Metrics metrics,
+            TraceOperations traces) {
         this(
                 requireId(id),
                 dueHandler,
                 clock,
                 new NettyTimerBackend(id, config),
                 newDueExecutor(id, config),
-                config.maxPendingTimeouts());
+                config.maxPendingTimeouts(),
+                metrics,
+                traces);
     }
 
     NettyTimeWheel(
@@ -65,6 +83,26 @@ public final class NettyTimeWheel implements TimeWheel, AutoCloseable {
             TimerBackend timerBackend,
             ThreadPoolExecutor dueExecutor,
             long maxPendingTimeouts) {
+        this(
+                id,
+                dueHandler,
+                clock,
+                timerBackend,
+                dueExecutor,
+                maxPendingTimeouts,
+                Metrics.noop(),
+                TraceOperations.noop());
+    }
+
+    NettyTimeWheel(
+            String id,
+            DueMessageHandler dueHandler,
+            Clock clock,
+            TimerBackend timerBackend,
+            ThreadPoolExecutor dueExecutor,
+            long maxPendingTimeouts,
+            Metrics metrics,
+            TraceOperations traces) {
         this.id = requireId(id);
         this.dueHandler = Objects.requireNonNull(dueHandler, "dueHandler");
         this.clock = Objects.requireNonNull(clock, "clock");
@@ -74,6 +112,8 @@ public final class NettyTimeWheel implements TimeWheel, AutoCloseable {
             throw new IllegalArgumentException("maxPendingTimeouts must be positive");
         }
         this.maxPendingTimeouts = maxPendingTimeouts;
+        this.metrics = Objects.requireNonNull(metrics, "metrics");
+        this.traces = Objects.requireNonNull(traces, "traces");
     }
 
     @Override
@@ -83,6 +123,16 @@ public final class NettyTimeWheel implements TimeWheel, AutoCloseable {
 
     @Override
     public void add(Message message) {
+        traces.inSpan(
+                "when.schedule",
+                TraceAttributes.of("when.timewheel.level", "timer"),
+                () -> {
+                    addInternal(message);
+                    return null;
+                });
+    }
+
+    private void addInternal(Message message) {
         Objects.requireNonNull(message, "message");
         String messageId = requireMessageId(message.messageId());
         if (!id.equals(message.timeWheelId())) {
@@ -197,10 +247,11 @@ public final class NettyTimeWheel implements TimeWheel, AutoCloseable {
             }
         }
         try {
-            dueExecutor.execute(() -> invokeDueHandler(entry.messageId));
+            dueExecutor.execute(traces.wrap(() -> invokeDueHandler(entry.messageId)));
         } catch (RejectedExecutionException exception) {
             // Redis retains the PENDING message fact, so a later rebuild can safely recover it.
             rejectedDueHandoffs.incrementAndGet();
+            metrics.incr(WhenMetrics.DUE_HANDOFF_REJECTED, "reason", "queue_full");
         }
     }
 

@@ -17,6 +17,11 @@ import io.grpc.protobuf.services.HealthStatusManager;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import com.when.observability.TraceAttributes;
+import com.when.observability.TraceOperations;
+import com.when.observability.TraceSpanKind;
+import com.when.observability.grpc.GrpcTraceContext;
+import com.when.observability.grpc.GrpcTraceServerInterceptor;
 
 /** Internal gRPC lifecycle that adds the identity-preserving forwarding interceptor. */
 public final class IngressGrpcServer implements AutoCloseable {
@@ -24,14 +29,20 @@ public final class IngressGrpcServer implements AutoCloseable {
     private final HealthStatusManager health = new HealthStatusManager();
 
     public IngressGrpcServer(int port, DelayMessageHandler handler) {
+        this(port, handler, TraceOperations.noop());
+    }
+
+    public IngressGrpcServer(int port, DelayMessageHandler handler, TraceOperations traces) {
         if (port < 0 || port > 65_535) {
             throw new IllegalArgumentException("gRPC port must be between 0 and 65535");
         }
         Objects.requireNonNull(handler, "handler");
+        Objects.requireNonNull(traces, "traces");
         this.server = NettyServerBuilder.forPort(port)
                 .addService(ServerInterceptors.intercept(
-                        new DelayMessageServiceImpl(transportHandler(handler)),
-                        new ForwardingServerInterceptor()))
+                        new DelayMessageServiceImpl(transportHandler(handler, traces)),
+                        new ForwardingServerInterceptor(),
+                        new GrpcTraceServerInterceptor()))
                 .addService(health.getHealthService())
                 .build();
     }
@@ -67,12 +78,17 @@ public final class IngressGrpcServer implements AutoCloseable {
     }
 
     static DelayMessageHandler transportHandler(DelayMessageHandler delegate) {
+        return transportHandler(delegate, TraceOperations.noop());
+    }
+
+    static DelayMessageHandler transportHandler(DelayMessageHandler delegate, TraceOperations traces) {
         Objects.requireNonNull(delegate, "delegate");
+        Objects.requireNonNull(traces, "traces");
         return new DelayMessageHandler() {
             @Override
             public SubmitResult submit(SubmitCommand command) {
                 try {
-                    return delegate.submit(command);
+                    return forwarded(traces, "submit", () -> delegate.submit(command));
                 } catch (IngressValidationException exception) {
                     throw new RequestValidationException(exception.getMessage());
                 }
@@ -80,13 +96,24 @@ public final class IngressGrpcServer implements AutoCloseable {
 
             @Override
             public MessageView query(String messageId) {
-                return delegate.query(messageId);
+                return forwarded(traces, "query", () -> delegate.query(messageId));
             }
 
             @Override
             public CancelResult cancel(String messageId) {
-                return delegate.cancel(messageId);
+                return forwarded(traces, "cancel", () -> delegate.cancel(messageId));
             }
         };
+    }
+
+    private static <T> T forwarded(
+            TraceOperations traces, String operation, java.util.function.Supplier<T> action) {
+        return traces.withRemoteContext(
+                GrpcTraceContext.incoming(),
+                () -> traces.inSpan(
+                        "when.forward",
+                        TraceSpanKind.SERVER,
+                        TraceAttributes.of("rpc.system", "grpc", "rpc.method", operation),
+                        action));
     }
 }
