@@ -40,6 +40,7 @@ import com.when.observability.TelemetryRuntime;
 import com.when.observability.TraceOperations;
 import com.when.sink.http.HttpSink;
 import com.when.sink.kafka.KafkaSink;
+import com.when.sink.file.FileSink;
 import com.when.sink.spi.SinkRegistry;
 import com.when.timewheel.DefaultTimeWheelRegistry;
 import com.when.timewheel.NettyTimeWheel;
@@ -98,7 +99,8 @@ public final class WhenServer {
                 rawStorage::healthCheck,
                 metadataClient::healthCheck,
                 Duration.ofSeconds(2)).start();
-        SinkRegistry sinks = new SinkRegistry(List.of(new HttpSink(traces), new KafkaSink(traces)));
+        SinkRegistry sinks = new SinkRegistry(List.of(
+                new HttpSink(traces), new KafkaSink(traces), new FileSink()));
         DefaultTimeWheelRegistry timeWheels = new DefaultTimeWheelRegistry();
         DefaultDueMessageHandler dueHandler = new DefaultDueMessageHandler(
                 config.nodeId(),

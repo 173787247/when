@@ -194,7 +194,7 @@ components:
       enum: [PENDING, DELIVERING, DELIVERED, FAILED, CANCELLED]
     SinkType:
       type: string
-      enum: [HTTP, KAFKA]
+      enum: [HTTP, KAFKA, FILE]
     HttpSinkConfig:
       type: object
       additionalProperties: false
@@ -213,15 +213,27 @@ components:
         topic: {type: string, minLength: 1, maxLength: 249}
         key: {type: string, maxLength: 1024}
         headers: {type: object, additionalProperties: {type: string}}
+    FileSinkConfig:
+      type: object
+      additionalProperties: false
+      required: [path]
+      properties:
+        path:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          description: Relative path below the node's WHEN_FILE_SINK_BASE_DIR.
     SinkConfig:
       type: object
       additionalProperties: false
       properties:
         http: {$ref: '#/components/schemas/HttpSinkConfig'}
         kafka: {$ref: '#/components/schemas/KafkaSinkConfig'}
+        file: {$ref: '#/components/schemas/FileSinkConfig'}
       oneOf:
         - required: [http]
         - required: [kafka]
+        - required: [file]
     SubmitMessageRequest:
       type: object
       additionalProperties: false

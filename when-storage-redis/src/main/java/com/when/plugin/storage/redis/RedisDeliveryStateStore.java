@@ -99,6 +99,7 @@ public final class RedisDeliveryStateStore implements DeliveryStateStore {
     public Optional<DeliveryLease> tryAcquire(
             String messageId, String nodeId, Instant leaseUntil) {
         Objects.requireNonNull(leaseUntil, "leaseUntil");
+        Instant persistedLeaseUntil = Instant.ofEpochMilli(leaseUntil.toEpochMilli());
         String attemptId = DeliveryAttemptIds.next();
         try (Jedis jedis = pool.getResource()) {
             Object result = jedis.eval(
@@ -109,12 +110,12 @@ public final class RedisDeliveryStateStore implements DeliveryStateStore {
                             messageId,
                             requireText(nodeId, "nodeId"),
                             attemptId,
-                            Long.toString(leaseUntil.toEpochMilli()),
+                            Long.toString(persistedLeaseUntil.toEpochMilli()),
                             Long.toString(fallbackTtlMillis)));
             if (!Long.valueOf(1L).equals(result)) {
                 return Optional.empty();
             }
-            return Optional.of(new DeliveryLease(messageId, nodeId, attemptId, leaseUntil));
+            return Optional.of(new DeliveryLease(messageId, nodeId, attemptId, persistedLeaseUntil));
         } catch (JedisException exception) {
             throw operationFailure("acquire delivery lease", messageId, exception);
         }

@@ -1,6 +1,6 @@
 // Generated from openapi/when-v1.yaml. Do not add transport fields outside that contract.
 export type MessageStatus = 'PENDING' | 'DELIVERING' | 'DELIVERED' | 'FAILED' | 'CANCELLED'
-export type SinkType = 'HTTP' | 'KAFKA'
+export type SinkType = 'HTTP' | 'KAFKA' | 'FILE'
 
 export interface Envelope<T> { code: string; message: string; request_id: string; data: T }
 export interface MessageSummary {

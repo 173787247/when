@@ -701,6 +701,16 @@ class Runner:
             self.lock_handle.close()
 
     def prepare_branch(self, stage: dict[str, Any]) -> None:
+        # Interrupted work resumes in-place on its recorded lesson branch.
+        # Do not require a clean tree here: validation already confirmed the
+        # dirty paths are scoped to this exact active lesson.
+        if (
+            checked_branch() == stage['branch']
+            and self.state.get('current_stage') == stage['id']
+            and self.state.get('current_branch') == stage['branch']
+            and self.state.get('status') == 'RUNNING'
+        ):
+            return
         if repo_dirty():
             raise LoopError('working tree contains external changes: ' + ', '.join(repo_dirty()), 4)
         git('switch', 'master')

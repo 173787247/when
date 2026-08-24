@@ -10,6 +10,7 @@ import com.when.api.application.SubmitResult;
 import com.when.core.ClusterView;
 import com.when.core.HttpSinkConfig;
 import com.when.core.KafkaSinkConfig;
+import com.when.core.FileSinkConfig;
 import com.when.core.Message;
 import com.when.core.MessageStatus;
 import com.when.core.NodeEndpoint;
@@ -301,6 +302,7 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
         switch (command.sinkType()) {
             case HTTP -> validateHttp(command.sinkConfig());
             case KAFKA -> validateKafka(command.sinkConfig());
+            case FILE -> validateFile(command.sinkConfig());
         }
     }
 
@@ -334,6 +336,13 @@ public final class DefaultDelayMessageHandler implements DelayMessageHandler {
         }
         if (config.topic() == null || config.topic().isBlank()) {
             throw new IngressValidationException("Kafka topic is required");
+        }
+    }
+
+    private static void validateFile(Object value) {
+        if (!(value instanceof FileSinkConfig config)
+                || config.path() == null || config.path().isBlank()) {
+            throw new IngressValidationException("File sink path is required");
         }
     }
 
