@@ -58,9 +58,9 @@ When 同时承担产品目标和教学目标：
 7. Master 故障后 10 秒内完成接管；
 8. Redis 持久化，节点重启与切换后消息不丢；
 9. 至少一次投递与统一重试；
-10. Prometheus 指标、结构化日志、OpenTelemetry Trace、健康检查；
+10. Prometheus 指标、结构化日志、健康检查；
 11. Web 管理台；
-12. Make/TGZ、Docker 镜像和 Kubernetes 三种 When 发布部署资料；
+12. docker-compose、单机生产和 Kubernetes 三种部署资料；
 13. CI 中的单元、集成、故障和安全检查。
 
 ### 3.2 MVP 明确不做
@@ -237,11 +237,10 @@ MVP 至少提供：时间轮列表与创建、消息列表与详情、消息取�
 
 ### 7.5 可部署性
 
-- 本地/传统主机：`make release` 生成只包含 When 的 TGZ，解压并配置外部 Redis/ETCD 后可以启动；
-- Docker：提供只包含 When 运行时的镜像，通过配置连接外部 Redis、ETCD、Kafka 和观测服务；
-- Kubernetes：只提供 When 的 StatefulSet、Headless/业务/管理 Service、ConfigMap、Secret 引用、探针和 PDB；
-- Redis、ETCD、Kafka、HTTP 下游和观测后端均为外部依赖，不进入 When 的发布制品；
-- 新手在外部依赖已经可用的前提下，按部署文档应能在 30 分钟内完成 When 启动和冒烟验证。
+- 本地：一条 docker-compose 命令启动依赖和 3 个 When 节点；
+- 传统生产：支持多机 When + 外置 Redis/ETCD + 负载均衡；
+- Kubernetes：提供 StatefulSet、Headless/业务/管理 Service、ConfigMap、Secret 引用、探针和 PDB 示例；
+- 新手按部署文档应能在 30 分钟内完成环境启动和冒烟验证。
 
 ## 8. 管理台需求
 

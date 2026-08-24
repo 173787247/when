@@ -10,7 +10,7 @@
   <!-- run -->
   <rect x="60" y="90" width="150" height="60" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="2.2"/>
   <text x="135" y="118" font-family="Arial, sans-serif" font-size="12.5" font-weight="bold" fill="#15803d" text-anchor="middle">执行 Loop</text>
-  <text x="135" y="138" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">46 执行 ./loop run --phase first</text>
+  <text x="135" y="138" font-family="Arial, sans-serif" font-size="10.5" fill="#64748b" text-anchor="middle">46 执行 ./loop run</text>
 
   <!-- problem -->
   <rect x="340" y="90" width="180" height="60" rx="10" fill="#fdecea" stroke="#c0392b" stroke-width="2.2"/>
