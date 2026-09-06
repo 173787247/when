@@ -44,6 +44,12 @@ after initialization, Redis and ETCD connectivity, node registration, and local
 role recovery. `/health` indicates that the process is alive and `/metrics`
 exposes Prometheus metrics.
 
+Business and admin HTTP APIs (`/api/v1/**`, `/admin/v1/**`) listen on
+`WHEN_HTTP_PORT` (default `8080`). The management port does not serve those
+routes. A local Windows follow-along may remap ports (for example HTTP `28080`,
+management `18081`, gRPC `29090`) to avoid collisions; keep the same split
+between API and management listeners.
+
 ## TGZ deployment
 
 Build and inspect the release:

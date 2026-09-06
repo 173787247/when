@@ -2,11 +2,13 @@ FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /workspace
 COPY .mvn .mvn
 COPY mvnw pom.xml ./
+COPY openapi openapi
 COPY when-common when-common
 COPY when-observability when-observability
 COPY when-sink-spi when-sink-spi
 COPY when-sink-http when-sink-http
 COPY when-sink-kafka when-sink-kafka
+COPY when-sink-file when-sink-file
 COPY when-delivery when-delivery
 COPY when-api when-api
 COPY when-admin-api when-admin-api
@@ -19,7 +21,12 @@ COPY when-test-support when-test-support
 COPY when-app when-app
 COPY when-e2e-test when-e2e-test
 COPY when-acceptance when-acceptance
-RUN ./mvnw -B -ntp -pl when-app -am package -DskipTests \
+# Windows checkouts often leave CRLF on mvnw; strip CR and ensure +x before invoke.
+RUN ls -la openapi \
+    && test -f openapi/when-v1.yaml \
+    && sed -i 's/\r$//' mvnw \
+    && chmod +x mvnw \
+    && ./mvnw -B -ntp -pl when-app -am package -DskipTests \
     && cp when-app/target/when-app-*-runner.jar /tmp/when-server.jar
 
 FROM eclipse-temurin:17-jre-jammy AS runtime

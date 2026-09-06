@@ -1,0 +1,4 @@
+# Keep Unix shell wrappers LF so Linux Docker/CI can execute them.
+mvnw text eol=lf
+loop text eol=lf
+*.sh text eol=lf
