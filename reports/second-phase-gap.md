@@ -15,6 +15,8 @@
 | `USER_GUIDE` / `DEPLOY` / reports | PASS |
 | 3-node join + kill Master + **DELIVERED** | PASS（`reports/ha-3node-practical.md`） |
 | HA 稳定性复测（TTL=30） | PASS（接管偏慢，仍 DELIVERED） |
+| kill Controller → 重选 + 再投递 | PASS |
+| 批量 100 条到期前杀 Master | **PASS 100/100**（`.loop/ha-batch/summary.txt`） |
 
 ## 仍缺（不能宣称 SECOND PHASE COMPLETE）
 
@@ -23,9 +25,9 @@
 | `harness/release/*` | **上游 `oryx-labs/when@main` 也没有该目录**；`loop_runner` 仍引用 `run-ha-failover.sh` 等，属文档/Runner 超前于公开树 |
 | `./loop run --phase second` | 未跑；`loop validate` 要 `master` 分支名 |
 | 接管 ≤10s | 本机 ~30–45s（lease TTL=30）；TTL=10 接管 miss |
-| 杀 Controller 再决策 | **PASS**（脚本扩展：重选 ~28s + 再投递 DELIVERED；软预算 15s 未达标） |
-| 100 条消息到期前杀 Master | 未做批量故障演练 |
-| HTTP+Kafka 真投递纳入同一 HA 剧本 | Kafka E2E 有过，未并入 HA smoke |
+| 杀 Controller 再决策 | **PASS**（重选 ~28s + 再投递 DELIVERED） |
+| 100 条消息到期前杀 Master | **PASS 100/100** |
+| HTTP Sink 并入烟雾 | 单项脚本 FAIL（listener）；Kafka 单项历史 PASS → 见 PLAN P6 |
 | K8s 三副本删 Pod | 未 live |
 
 ## 建议下一刀
