@@ -35,8 +35,8 @@ Evidence index: `.loop/judge-results.txt`, `.loop/lesson47-52-checklist.md`, thi
 ## Known limits / residual risk
 
 1. **Missing `harness/release/`** — cannot satisfy official release-candidate or final judges.
-2. **No live three-node HA** — Master failover <10s and old-Master fencing not demonstrated on this host.
-3. **Single-node Controller create-timewheel 503** — expected gap until ≥2 ready nodes.
+2. **No reliable live Master failover** — 3-node join + create TW PASS; after killing Master, assignment stayed on dead node and message remained PENDING (see `reports/ha-3node-practical.md`).
+3. **Single-node Controller create-timewheel 503** — resolved once ≥2 ready nodes are up; HTTP 500 flakiness remains under etcd stress.
 4. **Business HTTP idempotency** — not in OpenAPI submit contract; do not document as implemented.
 5. **Windows tooling** — MSYS tar duplicate listings; WSL `bash` ≠ Git Bash for `mvnw`; `JAVA_HOME` must be set explicitly.
 6. **Dirty working tree** — Dockerfile/mvnw/openapi/vite and local `.loop`/`dist` changes not merged as lesson branches.
