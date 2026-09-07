@@ -17,6 +17,8 @@
 | HA 稳定性复测（TTL=30） | PASS（接管偏慢，仍 DELIVERED） |
 | kill Controller → 重选 + 再投递 | PASS |
 | 批量 100 条到期前杀 Master | **PASS 100/100**（`.loop/ha-batch/summary.txt`） |
+| HTTP Sink 单节点烟雾 | **PASS**（`run-http-sink-smoke-windows.ps1`） |
+| Kafka Sink 单节点烟雾 | **PASS**（`run-kafka-sink-smoke-windows.ps1`） |
 
 ## 仍缺（不能宣称 SECOND PHASE COMPLETE）
 
@@ -27,11 +29,11 @@
 | 接管 ≤10s | 本机 ~30–45s（lease TTL=30）；TTL=10 接管 miss |
 | 杀 Controller 再决策 | **PASS**（重选 ~28s + 再投递 DELIVERED） |
 | 100 条消息到期前杀 Master | **PASS 100/100** |
-| HTTP Sink 并入烟雾 | 单项脚本 FAIL（listener）；Kafka 单项历史 PASS → 见 PLAN P6 |
+| HTTP+Kafka 并入三节点 HA 剧本 | 单项烟雾已 PASS；HA 剧本仍以 FILE 为主 → PLAN P6 |
 | K8s 三副本删 Pod | 未 live |
 
 ## 建议下一刀
 
-1. 跑扩展后的 `run-ha-3node-windows.ps1`（Master + Controller）。  
+1. （可选）把 HTTP/Kafka 断言并入三节点杀主剧本（P6）。  
 2. 检测时延：更干净 etcd 或可控 TTL，逼近 10s。  
 3. 不幻想从上游 `main`「同步 release」——公开树暂无；fork 继续用 Windows 烟雾 + 报告收口。
