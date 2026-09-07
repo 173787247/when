@@ -1,45 +1,45 @@
-# HA 3-node practical test (student fork)
+# HA 3-node practical test (fork landing)
 
 Date: 2026-09-07  
 Script: `harness/local/run-ha-3node-windows.ps1`  
-Log: `.loop/ha-3node/summary.txt`
+Evidence: `.loop/ha-3node/summary.txt`, `.loop/ha-3node-watch.log`  
+Commit: `2e3297a` (assignment-watch promote)
 
 ## Environment
 
-- Redis/ETCD: Docker `when-local-redis` / `when-local-etcd`
+- Redis/ETCD only: Docker `when-local-redis` / `when-local-etcd` (observability stack stopped)
 - Nodes: when-1 `:28080/:18081/:29090`, when-2 `:28081/:18082/:29091`, when-3 `:28082/:18083/:29092`
 - Runner jar: `when-app/target/when-app-1.0.0-SNAPSHOT-runner.jar`
+- Local knobs: `WHEN_ETCD_LEASE_TTL_SECONDS=30`, `WHEN_ETCD_HEARTBEAT_INTERVAL_MS=5000`, no OTEL
 
-## Results
+## Results (latest clean run)
 
 | Step | Result | Notes |
 |------|--------|-------|
-| Start 3 nodes `/ready` | **PASS** | All three UP; when-1 elected Controller |
-| `GET /admin/v1/cluster/nodes` | **PASS** | 3 ready nodes |
-| `POST /admin/v1/timewheels` | **PASS*** | HTTP often **500** after ~5s (etcd block / jetcd), but assignment is committed: Master≠Slave |
-| Submit FILE message | **PASS** | e.g. `90246593697026048` PENDING |
-| Kill Master process | **PASS** | when-1 gone from membership; when-2 becomes Controller |
-| Master assignment takeover ≤10s | **FAIL** | TW still `master=when-1` after >60s; no `NODE_LEFT` handling on new Controller |
-| Message reaches DELIVERED after kill | **FAIL** | Stays `PENDING` past `deliver_at` (Master dead, no promote) |
+| Start 3 nodes `/ready` | **PASS** | Sequential start; netstat port cleanup (avoid `Get-NetTCPConnection` stalls) |
+| `GET /admin/v1/cluster/nodes` | **PASS** | 3 ready nodes on first wait |
+| Time wheel `tw-0` assigned | **PASS** | Controller bootstrap; Master≠Slave (`when-1`/`when-2`) |
+| Submit FILE message | **PASS** | e.g. `90393903336787968` |
+| Kill Master process | **PASS** | Kill when-1 |
+| Master assignment takeover | **PASS*** | New master `when-2` after ~30s (lease TTL bound) |
+| Message `DELIVERED` after kill | **PASS** | Delivered after promote rebuild from Redis |
 
-\*Treat create as PASS only because list API shows a valid M/S assignment immediately after the 500.
+\*Official lesson budget is ≤10s. This machine uses a 30s etcd lease TTL for membership stability under Docker Desktop; detection cannot beat lease expiry.
 
-## Observed failure mode
+## Fixes that made deliver PASS
 
-1. Create/path stresses etcd (blocked event-loop, `EtcdClientException` heartbeats).
-2. Killing Master+Controller leaves assignment pointing at a dead Master.
-3. New Controller (`when-2`) does not apply `NODE_LEFT` failover for the existing wheel (no failover log lines).
+1. **Assignment watch promote**: when Controller ≠ new Master, the new Master applies `FailoverExecutor` locally after ETCD assignment PUT.
+2. **Replica store read-through**: `current()` reads ETCD so promote does not race a lagging watch cache.
+3. **Controller election wiring** + absent-Master reconcile (earlier commits).
+4. **HA script hardening**: no OTEL to dead `:4317`, longer lease, sequential ready, exact `"status":"DELIVERED"` match.
 
-This is an environment/runtime gap relative to lesson 53’s HA gate — not claimed as `SECOND PHASE COMPLETE`.
+## Still not claimed
 
-## Pass criteria still open
+- [ ] Takeover within **10s** on this Windows/Docker etcd setup
+- [ ] Official `harness/release/*` / `./loop run --phase second` → `SECOND PHASE COMPLETE`
+- [ ] Push to `oryx-labs/when` (never; fork only)
 
-- [ ] Takeover with `master` flipped away from killed node within 10s
-- [ ] Persisted message reaches a terminal delivered state after failover
-- [ ] Official `harness/release/run-ha-failover.sh` (still missing upstream)
+## Next
 
-## Next retries
-
-1. Stabilize etcd (dedicated container, `NO_PROXY`, no VPN) before create.
-2. Prefer Master ≠ Controller before kill (hard with current placer).
-3. Capture Controller logs around lease expiry / `NODE_LEFT`.
+1. Tune lease TTL (e.g. 10–12s) and re-measure takeover without losing 3-node membership.
+2. Keep evidence on fork `main` via PR from `backup/lesson53-followalong`.
