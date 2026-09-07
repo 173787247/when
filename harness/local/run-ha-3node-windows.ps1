@@ -52,10 +52,18 @@ $nodes = @(
 function Start-Node($n) {
   $log = Join-Path $runDir "$($n.Id).out.log"
   $err = Join-Path $runDir "$($n.Id).err.log"
+  # Avoid Get-NetTCPConnection — it can stall for minutes on Windows.
   foreach ($port in @($n.Http, $n.Mgmt, $n.Grpc)) {
-    Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue |
-      ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+    $pids = @(cmd /c "netstat -ano | findstr :$port" 2>$null |
+      ForEach-Object { if ($_ -match '\sLISTENING\s+(\d+)\s*$') { $Matches[1] } } |
+      Select-Object -Unique)
+    foreach ($pid in $pids) {
+      if ($pid -and $pid -ne '0') {
+        Stop-Process -Id ([int]$pid) -Force -ErrorAction SilentlyContinue
+      }
+    }
   }
+  Start-Sleep -Milliseconds 300
   # Avoid system SOCKS/HTTP proxy hijacking jetcd/Redis loopback traffic.
   $env:NO_PROXY = "127.0.0.1,localhost"
   $env:no_proxy = "127.0.0.1,localhost"
@@ -72,10 +80,13 @@ function Start-Node($n) {
   $env:WHEN_MANAGEMENT_HOST = "127.0.0.1"
   $env:WHEN_GRPC_PORT = "$($n.Grpc)"
   $env:WHEN_NODE_HOST = "127.0.0.1"
-  # Avoid auto tw-0 bootstrap racing admin create; wheels come from admin API.
+  # Local wheel bootstrap (Controller creates tw-0 when ≥2 nodes); keep OTEL off for slim HA.
   $env:WHEN_TIMEWHEEL_COUNT = "1"
   $env:WHEN_FILE_SINK_BASE_DIR = $fileSinkDir
-  $env:OTEL_EXPORTER_OTLP_ENDPOINT = "http://127.0.0.1:4317"
+  Remove-Item Env:OTEL_EXPORTER_OTLP_ENDPOINT -ErrorAction SilentlyContinue
+  # Docker Desktop etcd latency: default 6s TTL drops members under JVM/IO stalls.
+  $env:WHEN_ETCD_LEASE_TTL_SECONDS = "30"
+  $env:WHEN_ETCD_HEARTBEAT_INTERVAL_MS = "5000"
   $env:WHEN_LOG_FORMAT = "json"
   $p = Start-Process -FilePath "$env:JAVA_HOME\bin\java.exe" `
     -ArgumentList @("-Djava.net.useSystemProxies=false", "-jar", $appJar) `
@@ -103,37 +114,57 @@ Log "=== HA 3-node smoke begin ==="
 Stop-AllWhen
 Clear-WhenEtcd
 
-foreach ($n in $nodes) { Start-Node $n; Start-Sleep -Seconds 3 }
-foreach ($n in $nodes) { Wait-Ready $n }
-Log "settle 8s for leases/controller"
-Start-Sleep -Seconds 8
+foreach ($n in $nodes) {
+  Start-Node $n
+  Wait-Ready $n
+  Start-Sleep -Seconds 3
+}
+Log "settle 15s for leases/controller"
+Start-Sleep -Seconds 15
 
 $primaryHttp = $nodes[0].Http
-$nodesJson = curl.exe -s "http://127.0.0.1:$primaryHttp/admin/v1/cluster/nodes"
-Log "nodes=$nodesJson"
-$nodeCount = ([regex]::Matches($nodesJson, '"node_id"')).Count
+$nodesJson = $null
+$nodeCount = 0
+for ($attempt = 1; $attempt -le 60; $attempt++) {
+  foreach ($probe in $nodes) {
+    try {
+      $nodesJson = curl.exe -s -m 3 "http://127.0.0.1:$($probe.Http)/admin/v1/cluster/nodes"
+      if ($nodesJson -match '"code"\s*:\s*"OK"') {
+        $nodeCount = ([regex]::Matches($nodesJson, '"node_id"')).Count
+        if ($nodeCount -ge 3) {
+          $primaryHttp = $probe.Http
+          Log "nodes_ok via $($probe.Id) attempt=$attempt $nodesJson"
+          break
+        }
+      }
+    } catch {}
+  }
+  if ($nodeCount -ge 3) { break }
+  Log "nodes_wait_$attempt count=$nodeCount raw=$nodesJson"
+  Start-Sleep -Seconds 1
+}
 if ($nodeCount -lt 3) { throw "expected 3 nodes, got $nodeCount" }
 
-Set-Content -Encoding ascii (Join-Path $runDir "create-tw.json") '{"count":1}'
-$create = $null
-for ($attempt = 1; $attempt -le 5; $attempt++) {
-  $key = "ha-create-tw-$attempt-$(Get-Random -Maximum 99999)"
-  $create = curl.exe -s -w "`nHTTP %{http_code}" -X POST "http://127.0.0.1:$primaryHttp/admin/v1/timewheels" `
-    -H "Content-Type: application/json" -H "Idempotency-Key: $key" `
-    --data-binary "@$runDir\create-tw.json"
-  Log "create_tw_attempt=$attempt $create"
-  if ($create -match 'HTTP 201') { break }
-  # Already created by a prior partial attempt
-  $existing = curl.exe -s "http://127.0.0.1:$primaryHttp/admin/v1/timewheels"
-  if ($existing -match '"master"') { Log "using existing timewheels=$existing"; $create = "HTTP 201"; break }
-  Start-Sleep -Seconds 2
+# Prefer Controller-bootstrapped tw-0 (matches local WHEN_TIMEWHEEL_COUNT wheel).
+$tw = $null
+for ($attempt = 1; $attempt -le 20; $attempt++) {
+  $tw = curl.exe -s "http://127.0.0.1:$primaryHttp/admin/v1/timewheels"
+  Log "timewheels_wait_$attempt=$tw"
+  if ($tw -match '"master"') { break }
+  Start-Sleep -Seconds 1
 }
-if ($create -notmatch 'HTTP 201') { throw "create timewheel failed" }
-
-$tw = curl.exe -s "http://127.0.0.1:$primaryHttp/admin/v1/timewheels"
+if ($tw -notmatch '"master"') {
+  Set-Content -Encoding ascii (Join-Path $runDir "create-tw.json") '{"count":1}'
+  $create = curl.exe -s -w "`nHTTP %{http_code}" -X POST "http://127.0.0.1:$primaryHttp/admin/v1/timewheels" `
+    -H "Content-Type: application/json" -H "Idempotency-Key: ha-create-tw-fallback" `
+    --data-binary "@$runDir\create-tw.json"
+  Log "create_tw_fallback=$create"
+  $tw = curl.exe -s "http://127.0.0.1:$primaryHttp/admin/v1/timewheels"
+}
 Log "timewheels=$tw"
 $twObj = $tw | ConvertFrom-Json
-$assignment = $twObj.data.items[0]
+$assignment = $twObj.data.items | Where-Object { $_.tw_id -eq 'tw-0' } | Select-Object -First 1
+if (-not $assignment) { $assignment = $twObj.data.items[0] }
 $masterId = $assignment.master
 $slaveId = $assignment.slave
 Log "master=$masterId slave=$slaveId tw=$($assignment.tw_id)"
@@ -158,7 +189,7 @@ Stop-Process -Id $masterNode.Pid -Force -ErrorAction SilentlyContinue
 $survivorHttp = ($nodes | Where-Object { $_.Id -ne $masterId } | Select-Object -First 1).Http
 $promoted = $false
 $takeoverSec = -1
-for ($i = 0; $i -lt 40; $i++) {
+for ($i = 0; $i -lt 90; $i++) {
   Start-Sleep -Milliseconds 500
   try {
     $tw2 = curl.exe -s -m 2 "http://127.0.0.1:$survivorHttp/admin/v1/timewheels" | ConvertFrom-Json
@@ -171,7 +202,7 @@ for ($i = 0; $i -lt 40; $i++) {
     }
   } catch {}
 }
-if (-not $promoted) { throw "master takeover not observed within 20s" }
+if (-not $promoted) { throw "master takeover not observed within 45s" }
 if ($takeoverSec -gt 10) { Log "WARN takeover ${takeoverSec}s exceeds 10s budget" } else { Log "PASS takeover within 10s (${takeoverSec}s)" }
 
 # wait for delivery on survivor
@@ -180,8 +211,8 @@ for ($i = 0; $i -lt 40; $i++) {
   Start-Sleep -Seconds 1
   $q = curl.exe -s "http://127.0.0.1:$survivorHttp/api/v1/messages/$msgId"
   Log "query=$q"
-  if ($q -match '"DELIVERED"') { $delivered = $true; break }
-  if ($q -match '"CANCELLED"|"FAILED"') { break }
+  if ($q -match '"status"\s*:\s*"DELIVERED"') { $delivered = $true; break }
+  if ($q -match '"status"\s*:\s*"(CANCELLED|FAILED)"') { break }
 }
 if (-not $delivered) { throw "message $msgId did not reach DELIVERED after failover" }
 Log "PASS message delivered after failover msg=$msgId"
