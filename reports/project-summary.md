@@ -14,8 +14,8 @@
 | ETCD 元数据 / 选举 | `when-cluster` | PASS |
 | 时间轮调度 | `when-timewheel` | PASS |
 | 接入与跨节点路由 | `when-ingress-router` / `when-app` | FirstStageAcceptance PASS |
-| Master/Slave 副本 | `when-cluster` replica | 模块测 PASS；三节点 HA 实演 BLOCKED |
-| Controller / rebalance | `when-cluster` controller | 模块测 PASS；单节点建轮 503 |
+| Master/Slave 副本 | `when-cluster` replica | 模块测 PASS；三节点 kill Master 后 **DELIVERED PASS**（接管 ~30s） |
+| Controller / rebalance | `when-cluster` controller | 模块测 PASS；选主接线 + assignment-watch promote 已落地 |
 | HTTP / Kafka / FILE Sink | `when-sink-*` / `when-delivery` | 模块 + Kafka/FILE E2E PASS |
 | 可观测 | `/health` `/ready` `/metrics` + OTLP | 本机 Prometheus/Grafana 栈 PASS |
 | 管理台 | `when-admin-api` + Vue | GET/构建 PASS；建轮需多节点 |
@@ -31,7 +31,7 @@
 | First（39—45） | `./loop run --phase first` → `FIRST PHASE COMPLETE` | 未依赖全量 Runner；契约 + acceptance **等价 PASS** |
 | Second（47—52→53） | `./loop run --phase second` → `SECOND PHASE COMPLETE` | **未跑** Runner；逐节对照 + 实探；**未**输出 SECOND PHASE COMPLETE |
 
-原因（客观）：缺 `harness/release/*`、默认分支 `main`≠`master`、无三节点 HA 环境；跟课约定不伪造 Runner 状态。
+原因（客观）：缺 `harness/release/*`、默认分支 `main`≠`master`；本机 Windows HA 烟雾已 PASS，但未跑官方 Runner，不伪造 `SECOND PHASE COMPLETE`。
 
 ## 3. 全流程测试证据索引
 
@@ -41,7 +41,7 @@
 - 观测：lesson50 checklist + 本机 `:9090/:3000/:4317`
 - 管理台：lesson51 checklist
 - 打包镜像：`.loop/lesson52-docker-official.log`、`dist/*-lesson52.tgz`
-- 联调烟雾：`.loop/lesson53-smoke-summary.txt`
+- HA：`reports/ha-3node-practical.md`、`.loop/ha-3node-watch.log`（DELIVERED after kill）
 - 汇总报告：`reports/integration-test-report.md` 等三份
 
 ## 4. 发布制品
@@ -67,28 +67,32 @@
 ## 6. 未闭合缺口（诚实清单）
 
 1. `harness/release/` 缺失 → 官方发布候选/最终 gate 无法跑。  
-2. 三节点 Master 故障切换 <10s 未实演。  
-3. 单节点 `POST /admin/v1/timewheels` → 503。  
+2. 本机 kill Master 接管约 **30s**（etcd lease TTL=30）；官方 ≤**10s** 预算未达标（TTL=10 复测接管 miss）。  
+3. 单节点 `POST /admin/v1/timewheels` → 503（需 ≥2 节点）。  
 4. 业务 Submit 无 OpenAPI 级 Idempotency-Key。  
 5. K8s 三副本 live + 删 Pod 未做。  
-6. `check-release.sh` 在 MSYS tar 上误报重复条目。
+6. `check-release.sh` 在 MSYS tar 上误报重复条目。  
+7. 不向 `oryx-labs/when` 推送或提 PR（fork 独立落地）。
+
+详见 [`reports/second-phase-gap.md`](second-phase-gap.md)。
 
 ## 7. 后续路线建议
 
 | 优先级 | 方向 | 说明 |
 |--------|------|------|
-| P0 | 补齐或移植 `harness/release` + 三节点本地/K8s | 才能诚实宣称第二阶段完成 |
+| P0 | 补齐或移植 `harness/release` | 才能诚实宣称第二阶段完成 |
 | P0 | 分支命名与 Runner（`master` vs `main`）对齐 | 否则 `loop validate` 不过 |
+| P1 | 缩短故障检测（更稳 etcd / 更低 TTL） | 逼近 ≤10s 接管 |
 | P1 | 业务幂等与 OpenAPI 对齐 | 避免调用方误用 |
-| P1 | Windows 打包脚本（Git Bash / checksum） | 降低 MSYS 差异 |
-| P2 | 社区演进项 | 更多 Sink、鉴权、死信、优先级、跨地域、Operator、MCP |
+| P2 | K8s live + 社区演进项 | 鉴权、死信、更多 Sink 等 |
 
 ## 8. 版本备份
 
-学生 fork 已推送，不影响老师 upstream：
+独立 fork（不影响老师 upstream）：
 
-- https://github.com/173787247/when/tree/backup/lesson53-followalong
+- https://github.com/173787247/when （`main` 已含 HA 修复）
+- 工作分支：`backup/lesson53-followalong`
 
 ## 9. 一句话收口
 
-When 在本机已证明「延时投递主路径 + 制品 + 手册」可跑通；课程真正交付的是 **契约驱动、切片验收、证据优先** 的 AI 协作方法。第二阶段官方 COMPLETE 仍差 HA 环境与 release harness，应作为后续工程项而不是口头完成。
+When 在本机已证明「延时投递主路径 + 三节点 kill Master 后投递恢复 + 制品/手册」可跑通；官方 `SECOND PHASE COMPLETE` 仍差 release harness 与 ≤10s 接管证据，按工程缺口继续，不口头完成。
