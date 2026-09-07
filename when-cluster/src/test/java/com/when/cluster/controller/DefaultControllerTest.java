@@ -80,6 +80,22 @@ class DefaultControllerTest {
     }
 
     @Test
+    void successorReconcilesDeadMasterMissedByWatch() throws Exception {
+        // Membership already lacks node-1; watch will never deliver NODE_LEFT for it.
+        FakeStore store = new FakeStore(nodes("node-2", "node-3"), Map.of(
+                "tw-a", assignment("tw-a", "node-1", "node-2", "in_sync")));
+        List<AssignmentAction> executed = new java.util.concurrent.CopyOnWriteArrayList<>();
+        try (DefaultController controller = controller(store, executed)) {
+            controller.onControllerElected(new ControllerTerm("node-2", 70));
+
+            await(() -> executed.contains(AssignmentAction.PROMOTE_SLAVE));
+            TimeWheelMetadata result = store.records.get("tw-a").metadata();
+            assertEquals("node-2", result.master());
+            assertNotEquals("node-1", result.master());
+        }
+    }
+
+    @Test
     void successorReloadsCommittedStateAndDoesNotReplayFailover() throws Exception {
         FakeStore store = new FakeStore(nodes("node-2", "node-3"), Map.of(
                 "tw-a", assignment("tw-a", "node-1", "node-2", "in_sync")));
