@@ -7,11 +7,15 @@ import com.when.cluster.controller.DefaultController;
 import com.when.cluster.controller.DefaultRebalancePlanner;
 import com.when.cluster.controller.EtcdAssignmentStore;
 import com.when.cluster.controller.EtcdTimeWheelAdminService;
+import com.when.cluster.controller.FailoverActionExecutor;
 import com.when.cluster.controller.RebalancePolicy;
 import com.when.cluster.controller.ControllerTerm;
+import com.when.cluster.controller.TimeWheelSpec;
 import com.when.cluster.etcd.EtcdMetadataClient;
 import com.when.cluster.membership.EtcdClusterMembership;
 import com.when.cluster.membership.NodeInfo;
+import com.when.cluster.replica.DefaultFailoverExecutor;
+import com.when.cluster.replica.EtcdReplicaAssignmentStore;
 import com.when.core.ClusterView;
 import com.when.core.NodeEndpoint;
 import com.when.core.StoragePlugin;
@@ -51,7 +55,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.boot.Banner;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -89,10 +92,16 @@ public final class WhenServer {
                 new RedisDeliveryStateStore(redisConfig);
         RedisAdminQueryStore adminIndex = new RedisAdminQueryStore(redisConfig, rawStorage);
         EtcdMetadataClient metadataClient = EtcdMetadataClient.fromEnvironment(metrics, traces);
+        long leaseTtlSeconds = environmentLong(
+                "WHEN_ETCD_LEASE_TTL_SECONDS",
+                EtcdClusterMembership.DEFAULT_LEASE_TTL_SECONDS);
+        Duration heartbeatInterval = Duration.ofMillis(environmentLong(
+                "WHEN_ETCD_HEARTBEAT_INTERVAL_MS",
+                EtcdClusterMembership.DEFAULT_HEARTBEAT_INTERVAL.toMillis()));
         EtcdClusterMembership membership = new EtcdClusterMembership(
                 metadataClient,
-                EtcdClusterMembership.DEFAULT_LEASE_TTL_SECONDS,
-                EtcdClusterMembership.DEFAULT_HEARTBEAT_INTERVAL,
+                leaseTtlSeconds,
+                heartbeatInterval,
                 metrics);
         DependencyHealthMonitor healthMonitor = new DependencyHealthMonitor(
                 readiness,
@@ -147,11 +156,19 @@ public final class WhenServer {
                 new StructuredEventLogger(DefaultDelayMessageHandler.class, "when", config.nodeId()));
 
         EtcdAssignmentStore assignmentStore = new EtcdAssignmentStore(config.nodeId(), metadataClient);
+        EtcdReplicaAssignmentStore replicaAssignments = new EtcdReplicaAssignmentStore(metadataClient);
+        DefaultFailoverExecutor failoverExecutor = new DefaultFailoverExecutor(
+                config.nodeId(), timeWheels, storage, replicaAssignments, metrics);
+        replicaAssignments.onAssignmentChanged(assignment -> {
+            if (assignment.isMaster(config.nodeId())) {
+                failoverExecutor.applyAssignment(assignment);
+            }
+        });
         DefaultController controller = new DefaultController(
                 assignmentStore,
                 new DefaultRebalancePlanner(),
                 RebalancePolicy.defaults(),
-                (decision, assignment) -> CompletableFuture.completedFuture(null));
+                new FailoverActionExecutor(failoverExecutor));
         EtcdTimeWheelAdminService timeWheelAdmin =
                 new EtcdTimeWheelAdminService(controller, metadataClient);
         AdminQueryService adminQueries = new AdminQueryService(
@@ -161,6 +178,13 @@ public final class WhenServer {
             ConfigurableApplicationContext context = httpApplication.getAndSet(null);
             if (context != null) context.close();
         };
+        java.util.concurrent.ScheduledExecutorService wheelBootstrap =
+                java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                    Thread t = new Thread(r, "when-wheel-bootstrap");
+                    t.setDaemon(true);
+                    return t;
+                });
+        AutoCloseable wheelBootstrapClose = wheelBootstrap::shutdownNow;
         WhenNode node = new WhenNode(
                 config.grpcPort(),
                 handler,
@@ -179,7 +203,10 @@ public final class WhenServer {
                         recoveryWorker,
                         healthMonitor,
                         controller,
+                        failoverExecutor,
+                        replicaAssignments,
                         adminIndex,
+                        wheelBootstrapClose,
                         httpResource),
                 traces);
 
@@ -189,10 +216,22 @@ public final class WhenServer {
                     new NodeInfo(config.nodeId(), host, config.grpcPort(), System.currentTimeMillis(), 0),
                     config.workerId());
             readiness.registered(true);
-            if (membership.tryBecomeController()) {
-                long term = membership.currentControllerTerm().orElseThrow();
-                controller.onControllerElected(new ControllerTerm(config.nodeId(), term));
-            }
+            membership.setControllerWonHandler((nodeId, term) ->
+                    controller.onControllerElected(new ControllerTerm(nodeId, term)));
+            wheelBootstrap.scheduleAtFixedRate(() -> {
+                if (!membership.isController()) {
+                    return;
+                }
+                try {
+                    for (String wheelId : config.timeWheelIds()) {
+                        controller.createTimeWheel(new TimeWheelSpec(wheelId));
+                    }
+                    wheelBootstrap.shutdown();
+                } catch (RuntimeException ignored) {
+                    // Wait until >=2 ready nodes are present.
+                }
+            }, 1, 2, java.util.concurrent.TimeUnit.SECONDS);
+            membership.tryBecomeController();
             node.start();
             readiness.rolesRecovered(true);
             readiness.initialized(true);
@@ -227,5 +266,13 @@ public final class WhenServer {
     private static String environment(String name, String defaultValue) {
         String value = System.getenv(name);
         return value == null || value.isBlank() ? defaultValue : value;
+    }
+
+    private static long environmentLong(String name, long defaultValue) {
+        String value = System.getenv(name);
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+        return Long.parseLong(value.trim());
     }
 }

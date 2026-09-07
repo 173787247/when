@@ -51,6 +51,17 @@ public final class EtcdClusterMembership implements ClusterMembership {
     private volatile ScheduledFuture<?> heartbeatTask;
     private volatile EtcdMetadataClient.WatchHandle memberWatch;
     private volatile EtcdMetadataClient.WatchHandle controllerWatch;
+    private volatile ControllerWonHandler controllerWonHandler = (nodeId, term) -> { };
+
+    /** Invoked on this node after it successfully claims the Controller key. */
+    @FunctionalInterface
+    public interface ControllerWonHandler {
+        void onControllerWon(String nodeId, long termRevision);
+    }
+
+    public void setControllerWonHandler(ControllerWonHandler handler) {
+        this.controllerWonHandler = handler == null ? (nodeId, term) -> { } : handler;
+    }
 
     public EtcdClusterMembership(EtcdMetadataClient client) {
         this(client, DEFAULT_LEASE_TTL_SECONDS, DEFAULT_HEARTBEAT_INTERVAL, Metrics.noop());
@@ -265,6 +276,15 @@ public final class EtcdClusterMembership implements ClusterMembership {
         controller = owns;
         if (owns) {
             controllerSnapshot = loadControllerSnapshot();
+            long term = currentControllerTerm().orElse(0L);
+            try {
+                controllerWonHandler.onControllerWon(currentSelf.nodeId(), term);
+            } catch (RuntimeException e) {
+                LOGGER.log(
+                        Level.WARNING,
+                        "operation=controller_elected_callback status=failed error_type={0}",
+                        e.getClass().getSimpleName());
+            }
         }
         metrics.incr(
                 WhenMetrics.CONTROLLER_ELECTIONS,

@@ -107,7 +107,14 @@ public final class DefaultController implements Controller, AutoCloseable {
                     TimeUnit.MILLISECONDS);
             // Watch starts at revision+1; NODE_LEFT that already happened (e.g. previous
             // Controller died with the Master) must be reconciled from membership.
+            // Lease expiry can lag election, so retry briefly after winning.
             eventLoop.execute(this::reconcileAbsentAssignedNodes);
+            for (long delaySeconds : new long[] {2L, 5L, 10L, 15L, 20L}) {
+                eventLoop.schedule(
+                        this::reconcileAbsentAssignedNodes,
+                        delaySeconds,
+                        TimeUnit.SECONDS);
+            }
         }
     }
 
@@ -508,10 +515,18 @@ public final class DefaultController implements Controller, AutoCloseable {
             AssignmentRecord committed) {
         actionExecutor.execute(decision, committed).whenComplete((ignored, failure) -> {
             if (failure != null) {
+                Throwable root = failure;
+                while (root.getCause() != null && root.getCause() != root) {
+                    root = root.getCause();
+                }
                 LOGGER.log(
                         Level.WARNING,
-                        "operation=controller_action status=failed action={0} error_type={1}",
-                        new Object[] {decision.action(), failure.getClass().getSimpleName()});
+                        "operation=controller_action status=failed action={0} error_type={1} detail={2}",
+                        new Object[] {
+                            decision.action(),
+                            root.getClass().getSimpleName(),
+                            root.getMessage()
+                        });
             } else if (decision.action() == AssignmentAction.ASSIGN_CANDIDATE) {
                 eventLoop.execute(() -> candidateRebuildCompleted(decision, committed));
             }

@@ -12,7 +12,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /** ETCD-backed assignment reader with version-fenced sync-state updates. */
 public final class EtcdReplicaAssignmentStore implements ReplicaAssignmentStore, AutoCloseable {
@@ -24,6 +27,12 @@ public final class EtcdReplicaAssignmentStore implements ReplicaAssignmentStore,
     private final Map<String, TimeWheelAssignment> cache = new HashMap<>();
     private final List<EtcdWatchEvent> pendingEvents = new ArrayList<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final ExecutorService listenerExecutor = Executors.newSingleThreadExecutor(runnable -> {
+        Thread thread = new Thread(runnable, "when-assignment-watch");
+        thread.setDaemon(true);
+        return thread;
+    });
+    private volatile Consumer<TimeWheelAssignment> assignmentListener;
     private boolean initializing;
     private EtcdMetadataClient.WatchHandle watch;
 
@@ -37,13 +46,30 @@ public final class EtcdReplicaAssignmentStore implements ReplicaAssignmentStore,
         start();
     }
 
+    /** Invoked for PUT events after the local cache is updated (not for the initial prefix load). */
+    public void onAssignmentChanged(Consumer<TimeWheelAssignment> listener) {
+        this.assignmentListener = Objects.requireNonNull(listener, "listener");
+    }
+
     @Override
     public Optional<TimeWheelAssignment> current(String twId) {
         String id = requireText(twId, "twId");
-        synchronized (stateLock) {
-            requireOpen();
-            return Optional.ofNullable(cache.get(id));
+        requireOpen();
+        // Always read-through ETCD so Controller CAS → promote does not race a lagging watch cache.
+        Optional<String> encoded = client.get(EtcdKeys.timeWheel(id));
+        if (encoded.isEmpty()) {
+            synchronized (stateLock) {
+                cache.remove(id);
+            }
+            return Optional.empty();
         }
+        TimeWheelAssignment assignment = assignment(id, codec.decodeTimeWheel(encoded.orElseThrow()));
+        synchronized (stateLock) {
+            if (!closed.get()) {
+                cache.put(id, assignment);
+            }
+        }
+        return Optional.of(assignment);
     }
 
     @Override
@@ -79,6 +105,7 @@ public final class EtcdReplicaAssignmentStore implements ReplicaAssignmentStore,
         if (!closed.compareAndSet(false, true)) {
             return;
         }
+        listenerExecutor.shutdownNow();
         synchronized (stateLock) {
             if (watch != null) {
                 watch.close();
@@ -130,8 +157,19 @@ public final class EtcdReplicaAssignmentStore implements ReplicaAssignmentStore,
         String id = keySegment(event.key());
         if (event.type() == EtcdWatchEvent.Type.DELETE) {
             cache.remove(id);
-        } else {
-            cache.put(id, assignment(id, codec.decodeTimeWheel(event.value())));
+            return;
+        }
+        TimeWheelAssignment assignment = assignment(id, codec.decodeTimeWheel(event.value()));
+        cache.put(id, assignment);
+        Consumer<TimeWheelAssignment> listener = assignmentListener;
+        if (listener != null && !initializing) {
+            listenerExecutor.execute(() -> {
+                try {
+                    listener.accept(assignment);
+                } catch (RuntimeException ignored) {
+                    // Listener failures must not kill the etcd watch thread.
+                }
+            });
         }
     }
 
