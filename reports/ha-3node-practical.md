@@ -41,5 +41,6 @@ Commit: `2e3297a` (assignment-watch promote)
 
 ## Next
 
-1. Tune lease TTL (e.g. 10–12s) and re-measure takeover without losing 3-node membership.
-2. Keep evidence on fork `main` via PR from `backup/lesson53-followalong`.
+1. Keep lease TTL at **30s** on this Windows/Docker setup (TTL=10 caused takeover miss in one retry).
+2. Official ≤10s budget remains an open gap vs lesson 53 gate.
+3. Evidence is on fork `main` via PR #2.

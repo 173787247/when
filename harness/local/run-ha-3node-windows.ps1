@@ -1,4 +1,4 @@
-# Local 3-node HA smoke on Windows (student fork follow-along).
+﻿# Local 3-node HA smoke on Windows (student fork follow-along).
 # Requires: Docker when-local-redis / when-local-etcd, packaged when-app runner jar.
 $ErrorActionPreference = "Stop"
 $repo = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
@@ -52,7 +52,7 @@ $nodes = @(
 function Start-Node($n) {
   $log = Join-Path $runDir "$($n.Id).out.log"
   $err = Join-Path $runDir "$($n.Id).err.log"
-  # Avoid Get-NetTCPConnection — it can stall for minutes on Windows.
+  # Avoid Get-NetTCPConnection 鈥?it can stall for minutes on Windows.
   foreach ($port in @($n.Http, $n.Mgmt, $n.Grpc)) {
     $pids = @(cmd /c "netstat -ano | findstr :$port" 2>$null |
       ForEach-Object { if ($_ -match '\sLISTENING\s+(\d+)\s*$') { $Matches[1] } } |
@@ -80,7 +80,7 @@ function Start-Node($n) {
   $env:WHEN_MANAGEMENT_HOST = "127.0.0.1"
   $env:WHEN_GRPC_PORT = "$($n.Grpc)"
   $env:WHEN_NODE_HOST = "127.0.0.1"
-  # Local wheel bootstrap (Controller creates tw-0 when ≥2 nodes); keep OTEL off for slim HA.
+  # Local wheel bootstrap (Controller creates tw-0 when 鈮? nodes); keep OTEL off for slim HA.
   $env:WHEN_TIMEWHEEL_COUNT = "1"
   $env:WHEN_FILE_SINK_BASE_DIR = $fileSinkDir
   Remove-Item Env:OTEL_EXPORTER_OTLP_ENDPOINT -ErrorAction SilentlyContinue
