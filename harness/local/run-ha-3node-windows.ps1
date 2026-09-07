@@ -217,8 +217,91 @@ for ($i = 0; $i -lt 40; $i++) {
 if (-not $delivered) { throw "message $msgId did not reach DELIVERED after failover" }
 Log "PASS message delivered after failover msg=$msgId"
 
-# leave survivors running for manual inspection; rewrite pids file
-$state = @{ nodes = @($nodes | ForEach-Object { @{ id = $_.Id; pid = $_.Pid; http = $_.Http; mgmt = $_.Mgmt; grpc = $_.Grpc } }); killed_master = $masterId; new_summary = $summary }
+# --- Controller kill: survivors must re-elect and still accept/deliver work ---
+$alive = @($nodes | Where-Object { $_.Id -ne $masterId })
+function Get-ControllerId([int]$httpPort) {
+  $raw = curl.exe -s -m 3 "http://127.0.0.1:$httpPort/admin/v1/cluster/nodes"
+  if ($raw -notmatch '"code"\s*:\s*"OK"') { return $null }
+  $obj = $raw | ConvertFrom-Json
+  $c = $obj.data.items | Where-Object { $_.controller -eq $true } | Select-Object -First 1
+  if ($c) { return $c.node_id }
+  return $null
+}
+$ctrlHttp = $alive[0].Http
+$controllerId = $null
+for ($i = 0; $i -lt 30; $i++) {
+  foreach ($n in $alive) {
+    $controllerId = Get-ControllerId $n.Http
+    if ($controllerId) { $ctrlHttp = $n.Http; break }
+  }
+  if ($controllerId) { break }
+  Start-Sleep -Seconds 1
+}
+if (-not $controllerId) { throw "no controller among survivors after master failover" }
+Log "controller_after_master_kill=$controllerId"
+
+$ctrlNode = $alive | Where-Object { $_.Id -eq $controllerId } | Select-Object -First 1
+if (-not $ctrlNode) { throw "controller node object missing: $controllerId" }
+$ctrlKillAt = Get-Date
+Log "killing controller $($ctrlNode.Id) pid=$($ctrlNode.Pid) at $ctrlKillAt"
+Stop-Process -Id $ctrlNode.Pid -Force -ErrorAction SilentlyContinue
+
+$remaining = @($alive | Where-Object { $_.Id -ne $controllerId })
+if ($remaining.Count -lt 1) { throw "no remaining node after controller kill" }
+$remainHttp = $remaining[0].Http
+$newCtrl = $null
+$ctrlTakeoverSec = -1
+for ($i = 0; $i -lt 90; $i++) {
+  Start-Sleep -Milliseconds 500
+  $cand = Get-ControllerId $remainHttp
+  if ($cand -and $cand -ne $controllerId) {
+    $ctrlTakeoverSec = ((Get-Date) - $ctrlKillAt).TotalSeconds
+    $newCtrl = $cand
+    Log "controller_reelect new=$newCtrl after ${ctrlTakeoverSec}s"
+    break
+  }
+}
+if (-not $newCtrl) { throw "controller re-election not observed within 45s" }
+if ($ctrlTakeoverSec -gt 15) {
+  Log "WARN controller re-elect ${ctrlTakeoverSec}s exceeds 15s soft budget"
+} else {
+  Log "PASS controller re-elect within 15s (${ctrlTakeoverSec}s)"
+}
+
+# Decision still works: list wheels + submit another FILE message
+$twAfter = curl.exe -s "http://127.0.0.1:$remainHttp/admin/v1/timewheels"
+Log "timewheels_after_controller_kill=$twAfter"
+if ($twAfter -notmatch '"master"') { throw "timewheels unavailable after controller re-elect" }
+
+$payload2 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("ha-controller-probe"))
+$submit2 = "{`"delay_seconds`":8,`"sink_type`":`"FILE`",`"sink_config`":{`"file`":{`"path`":`"ha-controller.txt`"}},`"payload`":`"$payload2`",`"business_tag`":`"ha-ctrl`"}"
+Set-Content -Encoding ascii (Join-Path $runDir "submit-ctrl.json") $submit2
+$sub2 = curl.exe -s -X POST "http://127.0.0.1:$remainHttp/api/v1/messages" `
+  -H "Content-Type: application/json" -H "X-Request-Id: ha-submit-ctrl" `
+  --data-binary "@$runDir\submit-ctrl.json"
+Log "submit_after_controller=$sub2"
+$msgId2 = ($sub2 | ConvertFrom-Json).data.message_id
+if (-not $msgId2) { throw "submit after controller kill failed" }
+
+$delivered2 = $false
+for ($i = 0; $i -lt 30; $i++) {
+  Start-Sleep -Seconds 1
+  $q2 = curl.exe -s "http://127.0.0.1:$remainHttp/api/v1/messages/$msgId2"
+  Log "query_ctrl=$q2"
+  if ($q2 -match '"status"\s*:\s*"DELIVERED"') { $delivered2 = $true; break }
+  if ($q2 -match '"status"\s*:\s*"(CANCELLED|FAILED)"') { break }
+}
+if (-not $delivered2) { throw "message $msgId2 did not DELIVER after controller re-elect" }
+Log "PASS message delivered after controller re-elect msg=$msgId2"
+
+# leave last survivor running for manual inspection
+$state = @{
+  nodes = @($nodes | ForEach-Object { @{ id = $_.Id; pid = $_.Pid; http = $_.Http; mgmt = $_.Mgmt; grpc = $_.Grpc } })
+  killed_master = $masterId
+  killed_controller = $controllerId
+  new_controller = $newCtrl
+  summary = $summary
+}
 $state | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 (Join-Path $runDir "state.json")
-Log "=== HA 3-node smoke PASS ==="
+Log "=== HA 3-node smoke PASS (master + controller) ==="
 Write-Host "SUMMARY=$summary"

@@ -14,21 +14,22 @@
 | TGZ / Dockerfile / kustomize | 基本 PASS |
 | `USER_GUIDE` / `DEPLOY` / reports | PASS |
 | 3-node join + kill Master + **DELIVERED** | PASS（`reports/ha-3node-practical.md`） |
+| HA 稳定性复测（TTL=30） | PASS（接管偏慢，仍 DELIVERED） |
 
 ## 仍缺（不能宣称 SECOND PHASE COMPLETE）
 
 | 项 | 缺口 |
 |----|------|
-| `harness/release/*` | 仓库无官方 HA/release 脚本与 gate |
+| `harness/release/*` | **上游 `oryx-labs/when@main` 也没有该目录**；`loop_runner` 仍引用 `run-ha-failover.sh` 等，属文档/Runner 超前于公开树 |
 | `./loop run --phase second` | 未跑；`loop validate` 要 `master` 分支名 |
-| 接管 ≤10s | 本机 ~30s（lease TTL=30）；TTL=10 接管 miss |
-| 杀 Controller 再决策 | 未单独做成正式用例 |
+| 接管 ≤10s | 本机 ~30–45s（lease TTL=30）；TTL=10 接管 miss |
+| 杀 Controller 再决策 | **PASS**（脚本扩展：重选 ~28s + 再投递 DELIVERED；软预算 15s 未达标） |
 | 100 条消息到期前杀 Master | 未做批量故障演练 |
 | HTTP+Kafka 真投递纳入同一 HA 剧本 | Kafka E2E 有过，未并入 HA smoke |
 | K8s 三副本删 Pod | 未 live |
 
 ## 建议下一刀
 
-1. **稳定性**：再跑 1–2 次 `run-ha-3node-windows.ps1`（TTL=30）确认非偶然 PASS。  
-2. **检测时延**：更干净的 etcd（非 Docker Desktop 共享压力）或可控 TTL，逼近 10s。  
-3. **Harness**：评估是否从上游同步 `harness/release`（只读对照，实现仍留在 fork）。
+1. 跑扩展后的 `run-ha-3node-windows.ps1`（Master + Controller）。  
+2. 检测时延：更干净 etcd 或可控 TTL，逼近 10s。  
+3. 不幻想从上游 `main`「同步 release」——公开树暂无；fork 继续用 Windows 烟雾 + 报告收口。

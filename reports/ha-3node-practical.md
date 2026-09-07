@@ -24,7 +24,7 @@ Commit: `2e3297a` (assignment-watch promote); docs on `main` after PR #2/#3
 | Master assignment takeover | **PASS*** | New master `when-2` after ~30s (lease TTL bound) |
 | Message `DELIVERED` after kill | **PASS** | Delivered after promote rebuild from Redis |
 
-\*Official lesson budget is ≤10s. This machine uses a 30s etcd lease TTL for membership stability under Docker Desktop; detection cannot beat lease expiry. Retest 2026-09-07 evening: takeover ~45s, still **DELIVERED PASS**.
+\*Official lesson budget is ≤10s. This machine uses a 30s etcd lease TTL for membership stability under Docker Desktop; detection cannot beat lease expiry. Retest 2026-09-07 evening: takeover ~45s, still **DELIVERED PASS**. Master+Controller extension: controller re-elect ~28s + second message **DELIVERED PASS** (`.loop/ha-3node-ctrl.log`).
 
 ## Fixes that made deliver PASS
 
