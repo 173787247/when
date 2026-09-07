@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
@@ -104,6 +105,9 @@ public final class DefaultController implements Controller, AutoCloseable {
                     loadCheckInterval.toMillis(),
                     loadCheckInterval.toMillis(),
                     TimeUnit.MILLISECONDS);
+            // Watch starts at revision+1; NODE_LEFT that already happened (e.g. previous
+            // Controller died with the Master) must be reconciled from membership.
+            eventLoop.execute(this::reconcileAbsentAssignedNodes);
         }
     }
 
@@ -228,10 +232,48 @@ public final class DefaultController implements Controller, AutoCloseable {
             case NODE_LEFT -> handleNodeLeft(event.nodeId());
             case SLAVE_OUT_OF_SYNC -> handleOutOfSync(event.twId());
             case NODE_JOINED -> handleNodeJoined(event);
-            case PERIODIC_REBALANCE -> applyRebalance();
+            case PERIODIC_REBALANCE -> {
+                reconcileAbsentAssignedNodesLocked();
+                applyRebalance();
+            }
             case TIME_WHEEL_CHANGED -> completeReadyCandidate(event.twId());
         }
         state = assignments.loadSnapshot(clock.millis());
+    }
+
+    /**
+     * Promote / replace replicas whose Master or Slave is no longer a healthy member.
+     * Covers leadership-change watch gaps where etcd DELETE events were already observed
+     * only by the previous Controller.
+     */
+    private void reconcileAbsentAssignedNodes() {
+        synchronized (stateLock) {
+            if (closed.get() || term == null || state == null) {
+                return;
+            }
+            reconcileAbsentAssignedNodesLocked();
+        }
+    }
+
+    private void reconcileAbsentAssignedNodesLocked() {
+        state = assignments.loadSnapshot(clock.millis());
+        TreeSet<String> missing = new TreeSet<>();
+        for (AssignmentRecord assignment : state.assignments().values()) {
+            TimeWheelMetadata metadata = assignment.metadata();
+            if (!healthyNode(state, metadata.master())) {
+                missing.add(metadata.master());
+            }
+            if (!healthyNode(state, metadata.slave())) {
+                missing.add(metadata.slave());
+            }
+            if (metadata.candidateSlave() != null
+                    && !healthyNode(state, metadata.candidateSlave())) {
+                missing.add(metadata.candidateSlave());
+            }
+        }
+        for (String nodeId : missing) {
+            handleNodeLeft(nodeId);
+        }
     }
 
     private void handleNodeLeft(String failedNode) {
