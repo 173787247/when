@@ -1,5 +1,10 @@
 # When
 
+> **本仓库说明（学生 fork）**  
+> 这是 [oryx-labs/when](https://github.com/oryx-labs/when) 的学习用 fork，用于课程跟课验收、Windows 本机联调 / HA 烟雾脚本，以及部署与使用手册备份。  
+> **不代表**上游官方发布。仓库中的 When 业务代码与课程原料仍遵循上游 **Apache License 2.0**（见根目录 [`LICENSE`](LICENSE)）；我们在此基础上的跟课修改、报告与辅助脚本同样按 Apache-2.0 分发。  
+> 跟课证据与缺口见：[`reports/project-summary.md`](reports/project-summary.md)、[`reports/ha-3node-practical.md`](reports/ha-3node-practical.md)；备份分支：`backup/lesson53-followalong`。
+
 When 是一个面向企业内部、可私有部署的分布式延时投递组件。业务方提交带有到期时间和目标 Sink 的消息；系统可靠保存消息，在到期时触发投递。它解决“未来某个时刻可靠交付数据”，不执行任意业务代码，也不是消息队列、Cron 平台或工作流引擎。
 
 项目同时是 Loop Engineering 的训练样本：需求、技术方案、公共契约、Harness、自动验收和运行证据都与实现一同维护。
