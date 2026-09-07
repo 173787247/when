@@ -2,7 +2,7 @@
 
 日期：2026-09-07  
 范围：第 39—53 跟课交付物回顾（对照现码 + 本机证据，非官方 `SECOND PHASE COMPLETE`）  
-备份：`github.com/173787247/when` 分支 `backup/lesson53-followalong` @ `f3a20d6`
+备份：`github.com/173787247/when` `main` @ HA PR #2/#3；工作分支 `backup/lesson53-followalong`
 
 ## 1. When 实际具备的能力
 
