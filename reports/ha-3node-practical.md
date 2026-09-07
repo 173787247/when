@@ -2,8 +2,8 @@
 
 Date: 2026-09-07  
 Script: `harness/local/run-ha-3node-windows.ps1`  
-Evidence: `.loop/ha-3node/summary.txt`, `.loop/ha-3node-watch.log`  
-Commit: `2e3297a` (assignment-watch promote)
+Evidence: `.loop/ha-3node/summary.txt`, `.loop/ha-3node-watch.log`, `.loop/ha-3node-retest.log`  
+Commit: `2e3297a` (assignment-watch promote); docs on `main` after PR #2/#3
 
 ## Environment
 
@@ -24,7 +24,7 @@ Commit: `2e3297a` (assignment-watch promote)
 | Master assignment takeover | **PASS*** | New master `when-2` after ~30s (lease TTL bound) |
 | Message `DELIVERED` after kill | **PASS** | Delivered after promote rebuild from Redis |
 
-\*Official lesson budget is ≤10s. This machine uses a 30s etcd lease TTL for membership stability under Docker Desktop; detection cannot beat lease expiry.
+\*Official lesson budget is ≤10s. This machine uses a 30s etcd lease TTL for membership stability under Docker Desktop; detection cannot beat lease expiry. Retest 2026-09-07 evening: takeover ~45s, still **DELIVERED PASS**.
 
 ## Fixes that made deliver PASS
 
