@@ -35,12 +35,17 @@ function Stop-AllWhen {
 }
 
 function Clear-WhenEtcd {
-  docker exec -e ETCDCTL_API=3 when-local-etcd etcdctl del --prefix /when/nodes 2>$null | Out-Null
-  docker exec -e ETCDCTL_API=3 when-local-etcd etcdctl del --prefix /when/controller 2>$null | Out-Null
-  docker exec -e ETCDCTL_API=3 when-local-etcd etcdctl del --prefix /when/workers 2>$null | Out-Null
-  docker exec -e ETCDCTL_API=3 when-local-etcd etcdctl del --prefix /when/timewheels 2>$null | Out-Null
-  docker exec -e ETCDCTL_API=3 when-local-etcd etcdctl del --prefix /when/operations 2>$null | Out-Null
-  Log "etcd when cluster keys cleared"
+  Remove-Item Env:ETCDCTL_API -ErrorAction SilentlyContinue
+  $etcdctl = $null
+  try { $etcdctl = (Get-Command etcdctl -ErrorAction Stop).Source } catch {}
+  if ($etcdctl) {
+    # etcd 3.7 writes JSON warnings to stderr; do not let that trip $ErrorActionPreference=Stop
+    cmd /c "`"$etcdctl`" --endpoints=http://127.0.0.1:2379 del --prefix /when >nul 2>nul"
+    Log "etcd when cluster keys cleared (native etcdctl)"
+    return
+  }
+  docker exec when-local-etcd etcdctl del --prefix /when 2>$null | Out-Null
+  Log "etcd when cluster keys cleared (docker etcdctl)"
 }
 
 $nodes = @(

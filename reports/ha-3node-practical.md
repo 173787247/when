@@ -66,3 +66,9 @@ Command: `WHEN_HA_LEASE_TTL_SECONDS=6 WHEN_HA_HEARTBEAT_MS=2000`
 Evidence: [`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt)
 
 Same failure as TTL=10: `INTERNAL_ERROR` then `recovering/out_of_sync` **before** kill; harness hung after killing `when-2`. Slimming Docker did **not** unlock the 10s gate.
+
+## Native etcd 3.5.16 (2026-09-08)
+
+Host binary `C:\Users\rchua\tools\etcd-v3.5.16` on `127.0.0.1:2379` (Docker etcd stopped).  
+Official 6s/2s still FAIL: jetcd `etcd_heartbeat` / `EtcdClientException` before kill.  
+Evidence: [`evidence/ha-3node-native-etcd-ttl6-summary.txt`](evidence/ha-3node-native-etcd-ttl6-summary.txt)

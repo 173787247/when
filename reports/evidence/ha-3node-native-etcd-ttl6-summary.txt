@@ -1,0 +1,13 @@
+# 2026-09-08 native etcd + official lease 6s / heartbeat 2s
+# etcd 3.7.1 (winget): health ~3ms; When jetcd heartbeat EtcdClientException; pre-kill recovering
+# etcd 3.5.16 (C:\Users\rchua\tools\etcd-v3.5.16, same as docker image): health ~5ms
+# still: timewheels empty -> INTERNAL_ERROR -> recovering/out_of_sync BEFORE kill
+# when-1 log: operation=etcd_heartbeat status=failed error_type=EtcdClientException
+# after kill when-2: harness hung, no <=10s takeover
+2026-09-08T09:55:35 === begin lease_ttl=6s native etcd 3.5.16 ===
+2026-09-08T09:56:09 nodes_ok 3 ready
+2026-09-08T09:56:22 timewheels_wait_8 INTERNAL_ERROR
+2026-09-08T09:56:42 tw-0 master=when-2 recovering/out_of_sync assignment_version=3
+2026-09-08T09:56:42 submit 90626335692558336 PENDING; killing when-2
+# no takeover line
+P3_NATIVE_ETCD_TTL6_FAIL

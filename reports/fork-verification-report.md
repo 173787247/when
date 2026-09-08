@@ -60,16 +60,14 @@
 - Kafka `90451296686968832` DELIVERED；consume=`ha-kafka-sink`
 - 摘录：[`evidence/ha-3node-sinks-summary.txt`](evidence/ha-3node-sinks-summary.txt)
 
-### 官方 6s/2s 复测（2026-09-08，已停无关容器）
+### 官方 6s/2s（Docker 瘦身 + 本机原生 etcd）
 
-先 `docker stop` 22 个无关容器，只留 `when-local-redis` / `when-local-etcd` / `when-local-kafka`，再跑课设 **TTL=6 / 心跳 2s**。
+1. 停 22 个无关容器后再跑 Docker etcd：**仍 FAIL**（[`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt)）。
+2. 本机装了原生 etcd：winget **3.7.1**（health ~3ms）以及与镜像同版本的 **3.5.16**（`C:\Users\rchua\tools\etcd-v3.5.16`，health ~5ms）。`docker stop when-local-etcd` 后直连 `127.0.0.1:2379`。
+3. 原生 3.5.16 + TTL=6 **仍 FAIL**，形态相同：杀主前 `INTERNAL_ERROR` / `recovering`；`when-1` 日志 `etcd_heartbeat ... EtcdClientException`；杀主后剧本挂死。
+4. 摘录：[`evidence/ha-3node-native-etcd-ttl6-summary.txt`](evidence/ha-3node-native-etcd-ttl6-summary.txt)
 
-- 三节点 `/ready`、成员齐
-- **未杀主**即 `INTERNAL_ERROR`，轮子 `recovering` / `out_of_sync`（assignment_version=3）
-- 杀 `when-2` 后剧本挂死，无 ≤10s 接管
-- 与早先 TTL=10（容器挤时）同一失败形态 → **不是旁路容器抢资源这么简单**，Docker Desktop etcd 短租约仍不稳
-- 摘录：[`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt)；对照 [`evidence/ha-3node-ttl10-summary.txt`](evidence/ha-3node-ttl10-summary.txt)
-- 本机默认可跑项仍用 TTL=30
+结论：≤10s 门**不是**「换原生 etcd 就能过」。短租约下 jetcd KeepAlive 在本机 Windows 三 JVM 上会断，成员被误判下线。默认可跑项仍用 TTL=30。
 
 ## 明确不做 / 未闭合
 

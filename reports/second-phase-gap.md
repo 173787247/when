@@ -28,7 +28,7 @@
 |----|------|
 | `harness/release/*` | **上游 `oryx-labs/when@main` 也没有该目录**；`loop_runner` 仍引用 `run-ha-failover.sh` 等，属文档/Runner 超前于公开树 |
 | `./loop run --phase second` | 未跑；`loop validate` 要 `master` 分支名 |
-| 接管 ≤10s | TTL=30 约 30–49s；停无关容器后官方 6s/2s **仍失败**（[`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt)） |
+| 接管 ≤10s | TTL=30 约 30–49s；原生 etcd 3.5.16 直连 + 官方 6s/2s **仍失败**（[`evidence/ha-3node-native-etcd-ttl6-summary.txt`](evidence/ha-3node-native-etcd-ttl6-summary.txt)） |
 | 杀 Controller 再决策 | **PASS**（重选 ~28s + 再投递 DELIVERED） |
 | 100 条消息到期前杀 Master | **PASS 100/100** |
 | HTTP+Kafka 并入三节点 HA 剧本 | **PASS**（P6/T13） |
