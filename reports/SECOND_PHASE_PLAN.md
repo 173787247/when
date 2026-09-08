@@ -31,12 +31,12 @@
 |----|----|------|----------|------|--------|
 | P1 | `harness/release/*.sh` | **上游 `main` 公开树也没有**；Runner 引用超前 | 上游发布后只读对照，再在 fork 移植或写 Windows 等价门；此前以本地烟雾+报告为准 | 上游补齐或课程下发 | P0 |
 | P2 | `./loop run --phase second` | 缺 P1；`loop validate` 要求分支名 `master` | fork 可另开文档说明用 `main`；不改 upstream 规则 | P1 | P0 |
-| P3 | 接管 ≤10s | Docker Desktop etcd + lease TTL=30 才能稳住成员；TTL=10 接管 miss | 换本机/WSL 原生 etcd 或更高配环境重测；保留 TTL=30 作为本机默认 | 更干净 etcd | P1 |
+| P3 | 接管 ≤10s | 2026-09-08 再测 TTL=10/心跳 2s：入轮前已 INTERNAL_ERROR + recovering/out_of_sync，杀主后脚本挂死，**未观察到 ≤10s 接管**；默认仍 TTL=30 | 换本机/WSL 原生 etcd 后再测官方 6s/2s；本机默认保持 30s | 更干净 etcd | P1 |
 | P4 | Controller 重选 ≤课程阈值 | 本机 ~28s | 同 P3 | P3 | P1 |
 | P5 | 100 条批量 HA | **已关闭（T10 PASS）** | — | — | done |
 | P6 | HA 剧本内嵌 HTTP+Kafka Sink | **已关闭（T13 PASS）** | — | — | done |
 | P7 | K8s 三副本删 Pod | 本机无课内 K8s 集群 live | 有集群后再跑 kustomize 部署+删 Master Pod | 可用 K8s | P2 |
-| P8 | `check-release.sh` MSYS | tar 列表重复误报 | Git Bash/Linux 复跑或忽略并注明 | CI/Linux | P2 |
+| P8 | `check-release.sh` Git Bash | **2026-09-08 复现 FAIL**：server tgz `tar -tz` 28 行 / unique 12（几乎每条重复）；`build-web.sh` 源码 hash 也已 stale | Linux/CI 再跑；本机不改官方脚本凑绿 | CI/Linux | P2 |
 | P9 | OpenAPI Idempotency-Key（业务 Submit） | 规格缺口 | 单独开契约变更（人工 Review）后再实现 | 契约 Review | P2 |
 
 ## 执行原则

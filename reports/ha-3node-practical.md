@@ -41,6 +41,20 @@ Commit: `2e3297a` (assignment-watch promote); docs on `main` after PR #2/#3
 
 ## Next
 
-1. Keep lease TTL at **30s** on this Windows/Docker setup (TTL=10 caused takeover miss in one retry).
+1. Keep lease TTL at **30s** on this Windows/Docker setup.
 2. Official ≤10s budget remains an open gap vs lesson 53 gate.
 3. Evidence is on fork `main` via PR #2.
+
+## TTL=10 retest (2026-09-08)
+
+Command: `WHEN_HA_LEASE_TTL_SECONDS=10 WHEN_HA_HEARTBEAT_MS=2000` + `run-ha-3node-windows.ps1`  
+Evidence: `.loop/ha-3node-ttl10-summary.txt`
+
+| Step | Result |
+|------|--------|
+| 3 nodes `/ready` + 3 members | PASS |
+| Time wheel before submit | **UNSTABLE**：多次 `INTERNAL_ERROR`，随后 `recovering` / `out_of_sync`（尚未杀主） |
+| Kill Master | 已杀 when-2 |
+| Takeover ≤10s | **FAIL / 剧本挂死**（杀主后无 takeover 日志，需手动停进程） |
+
+结论：本机 Docker Desktop etcd **不能**用官方 6s/10s TTL 做 10 秒门；继续 TTL=30。

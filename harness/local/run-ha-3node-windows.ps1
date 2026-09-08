@@ -84,9 +84,11 @@ function Start-Node($n) {
   $env:WHEN_TIMEWHEEL_COUNT = "1"
   $env:WHEN_FILE_SINK_BASE_DIR = $fileSinkDir
   Remove-Item Env:OTEL_EXPORTER_OTLP_ENDPOINT -ErrorAction SilentlyContinue
-  # Docker Desktop etcd latency: default 6s TTL drops members under JVM/IO stalls.
-  $env:WHEN_ETCD_LEASE_TTL_SECONDS = "30"
-  $env:WHEN_ETCD_HEARTBEAT_INTERVAL_MS = "5000"
+  # Default 30s for Docker Desktop etcd; override with WHEN_HA_LEASE_TTL_SECONDS / WHEN_HA_HEARTBEAT_MS.
+  $leaseTtl = if ($env:WHEN_HA_LEASE_TTL_SECONDS) { $env:WHEN_HA_LEASE_TTL_SECONDS } else { "30" }
+  $hbMs = if ($env:WHEN_HA_HEARTBEAT_MS) { $env:WHEN_HA_HEARTBEAT_MS } else { "5000" }
+  $env:WHEN_ETCD_LEASE_TTL_SECONDS = "$leaseTtl"
+  $env:WHEN_ETCD_HEARTBEAT_INTERVAL_MS = "$hbMs"
   $env:WHEN_LOG_FORMAT = "json"
   $p = Start-Process -FilePath "$env:JAVA_HOME\bin\java.exe" `
     -ArgumentList @("-Djava.net.useSystemProxies=false", "-jar", $appJar) `
@@ -110,7 +112,9 @@ function Wait-Ready($n, [int]$timeoutSec = 90) {
   throw "$($n.Id) not ready; see $($n.Id).err.log"
 }
 
-Log "=== HA 3-node smoke begin ==="
+$leaseTtlLog = if ($env:WHEN_HA_LEASE_TTL_SECONDS) { $env:WHEN_HA_LEASE_TTL_SECONDS } else { "30" }
+$hbLog = if ($env:WHEN_HA_HEARTBEAT_MS) { $env:WHEN_HA_HEARTBEAT_MS } else { "5000" }
+Log "=== HA 3-node smoke begin lease_ttl=${leaseTtlLog}s heartbeat=${hbLog}ms ==="
 Stop-AllWhen
 Clear-WhenEtcd
 
@@ -192,7 +196,7 @@ $takeoverSec = -1
 for ($i = 0; $i -lt 90; $i++) {
   Start-Sleep -Milliseconds 500
   try {
-    $tw2 = curl.exe -s -m 2 "http://127.0.0.1:$survivorHttp/admin/v1/timewheels" | ConvertFrom-Json
+      $tw2 = curl.exe -s --connect-timeout 2 -m 2 "http://127.0.0.1:$survivorHttp/admin/v1/timewheels" | ConvertFrom-Json
     $item = $tw2.data.items | Where-Object { $_.tw_id -eq $assignment.tw_id } | Select-Object -First 1
     if ($item -and $item.master -and $item.master -ne $masterId) {
       $takeoverSec = ((Get-Date) - $killAt).TotalSeconds
@@ -209,7 +213,7 @@ if ($takeoverSec -gt 10) { Log "WARN takeover ${takeoverSec}s exceeds 10s budget
 $delivered = $false
 for ($i = 0; $i -lt 40; $i++) {
   Start-Sleep -Seconds 1
-  $q = curl.exe -s "http://127.0.0.1:$survivorHttp/api/v1/messages/$msgId"
+  $q = curl.exe -s --connect-timeout 2 -m 3 "http://127.0.0.1:$survivorHttp/api/v1/messages/$msgId"
   Log "query=$q"
   if ($q -match '"status"\s*:\s*"DELIVERED"') { $delivered = $true; break }
   if ($q -match '"status"\s*:\s*"(CANCELLED|FAILED)"') { break }
@@ -286,7 +290,7 @@ if (-not $msgId2) { throw "submit after controller kill failed" }
 $delivered2 = $false
 for ($i = 0; $i -lt 30; $i++) {
   Start-Sleep -Seconds 1
-  $q2 = curl.exe -s "http://127.0.0.1:$remainHttp/api/v1/messages/$msgId2"
+  $q2 = curl.exe -s --connect-timeout 2 -m 3 "http://127.0.0.1:$remainHttp/api/v1/messages/$msgId2"
   Log "query_ctrl=$q2"
   if ($q2 -match '"status"\s*:\s*"DELIVERED"') { $delivered2 = $true; break }
   if ($q2 -match '"status"\s*:\s*"(CANCELLED|FAILED)"') { break }
