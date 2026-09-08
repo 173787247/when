@@ -35,15 +35,15 @@ Commit: `2e3297a` (assignment-watch promote); docs on `main` after PR #2/#3
 
 ## Still not claimed
 
-- [ ] Takeover within **10s** on this Windows/Docker etcd setup
+- [x] Takeover within **10s** on native etcd 3.5.16 + streaming keepAlive (4.38s)
 - [ ] Official `harness/release/*` / `./loop run --phase second` → `SECOND PHASE COMPLETE`
 - [ ] Push to `oryx-labs/when` (never; fork only)
 
 ## Next
 
-1. Keep lease TTL at **30s** on this Windows/Docker setup.
-2. Official ≤10s budget remains an open gap vs lesson 53 gate.
-3. Evidence is on fork `main` via PR #2.
+1. Prefer official 6s/2s on native etcd 3.5.16 after the streaming keepAlive change.
+2. Docker etcd + periodic `keepAliveOnce` remains the old FAIL path; do not use it for the 10s gate.
+3. Official `SECOND PHASE COMPLETE` still waits on `harness/release`.
 
 ## TTL=10 retest (2026-09-08)
 
@@ -72,3 +72,21 @@ Same failure as TTL=10: `INTERNAL_ERROR` then `recovering/out_of_sync` **before*
 Host binary `C:\Users\rchua\tools\etcd-v3.5.16` on `127.0.0.1:2379` (Docker etcd stopped).  
 Official 6s/2s still FAIL: jetcd `etcd_heartbeat` / `EtcdClientException` before kill.  
 Evidence: [`evidence/ha-3node-native-etcd-ttl6-summary.txt`](evidence/ha-3node-native-etcd-ttl6-summary.txt)
+
+## Streaming keepAlive + official 6s/2s (2026-09-08)
+
+Membership now uses jetcd streaming `keepAlive` instead of periodic `keepAliveOnce`. Watch callbacks are dispatched off the jetcd Vert.x loop so Controller lock + blocking etcd cannot starve the lease stream.
+
+Command: `WHEN_HA_LEASE_TTL_SECONDS=6 WHEN_HA_HEARTBEAT_MS=2000` + native etcd 3.5.16  
+Evidence: [`evidence/ha-3node-keepalive-ttl6-summary.txt`](evidence/ha-3node-keepalive-ttl6-summary.txt)
+
+| Step | Result |
+|------|--------|
+| 3 nodes ready, members stay registered | **PASS** |
+| `tw-0` running/in_sync before kill | **PASS** (when-1 / when-2) |
+| Kill Master when-1 | takeover when-2 **4.38s** |
+| FILE after failover | **DELIVERED** `90633011313250304` |
+| Kill Controller when-3 | re-elect when-2 **4.32s** |
+| FILE after re-elect | **DELIVERED** `90633096361156608` |
+
+Local official ≤10s gate: **PASS**.

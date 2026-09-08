@@ -17,8 +17,6 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,7 +46,7 @@ public final class EtcdClusterMembership implements ClusterMembership {
     private volatile long leaseId;
     private volatile boolean controller;
     private volatile ControllerSnapshot controllerSnapshot;
-    private volatile ScheduledFuture<?> heartbeatTask;
+    private volatile EtcdMetadataClient.KeepAliveHandle keepAliveHandle;
     private volatile EtcdMetadataClient.WatchHandle memberWatch;
     private volatile EtcdMetadataClient.WatchHandle controllerWatch;
     private volatile ControllerWonHandler controllerWonHandler = (nodeId, term) -> { };
@@ -118,11 +116,7 @@ public final class EtcdClusterMembership implements ClusterMembership {
                 self = node;
                 workerId = newWorkerId;
                 leaseId = newLeaseId;
-                heartbeatTask = heartbeatExecutor.scheduleWithFixedDelay(
-                        this::heartbeat,
-                        heartbeatInterval.toMillis(),
-                        heartbeatInterval.toMillis(),
-                        TimeUnit.MILLISECONDS);
+                startKeepAliveLocked(newLeaseId);
             } finally {
                 if (!registered) {
                     client.revokeLease(newLeaseId);
@@ -142,11 +136,7 @@ public final class EtcdClusterMembership implements ClusterMembership {
             leaseId = 0;
             controller = false;
             controllerSnapshot = null;
-            ScheduledFuture<?> task = heartbeatTask;
-            heartbeatTask = null;
-            if (task != null) {
-                task.cancel(false);
-            }
+            closeKeepAliveLocked();
             closeWatch(controllerWatch);
             controllerWatch = null;
         }
@@ -239,17 +229,49 @@ public final class EtcdClusterMembership implements ClusterMembership {
         electionExecutor.shutdownNow();
     }
 
-    private void heartbeat() {
-        long currentLease = leaseId;
-        if (currentLease == 0) {
-            return;
-        }
-        try {
-            client.keepAliveOnce(currentLease);
-        } catch (RuntimeException e) {
+    private void startKeepAliveLocked(long currentLease) {
+        closeKeepAliveLocked();
+        LOGGER.log(Level.INFO,
+                "operation=etcd_keepalive status=started ttl_seconds={0} interval_hint_ms={1}",
+                new Object[] { leaseTtlSeconds, heartbeatInterval.toMillis() });
+        EtcdMetadataClient.KeepAliveHandle handle = client.keepAlive(currentLease);
+        keepAliveHandle = handle;
+        handle.whenDone(error -> {
+            if (closed.get() || leaseId != currentLease || keepAliveHandle != handle) {
+                return;
+            }
+            Throwable failure = error != null
+                    ? error
+                    : new IllegalStateException("keep-alive stream completed");
             LOGGER.log(Level.WARNING,
-                    "operation=etcd_heartbeat status=failed error_type={0}",
-                    e.getClass().getSimpleName());
+                    "operation=etcd_keepalive status=failed error_type={0}",
+                    failure.getClass().getSimpleName());
+            heartbeatExecutor.execute(() -> {
+                synchronized (lifecycleLock) {
+                    if (closed.get() || leaseId != currentLease) {
+                        return;
+                    }
+                    try {
+                        startKeepAliveLocked(currentLease);
+                    } catch (RuntimeException restartError) {
+                        LOGGER.log(Level.WARNING,
+                                "operation=etcd_keepalive status=restart_failed error_type={0}",
+                                restartError.getClass().getSimpleName());
+                    }
+                }
+            });
+        });
+    }
+
+    private void closeKeepAliveLocked() {
+        EtcdMetadataClient.KeepAliveHandle handle = keepAliveHandle;
+        keepAliveHandle = null;
+        if (handle != null) {
+            try {
+                handle.close();
+            } catch (RuntimeException ignored) {
+                // jetcd may throw if the stream is already closed
+            }
         }
     }
 
