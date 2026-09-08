@@ -2,7 +2,7 @@
 
 Date: 2026-09-07  
 Script: `harness/local/run-ha-3node-windows.ps1`  
-Evidence: `.loop/ha-3node/summary.txt`, `.loop/ha-3node-watch.log`, `.loop/ha-3node-retest.log`  
+Evidence: [`fork-verification-report.md`](fork-verification-report.md)、[`evidence/`](evidence/)；本机 `.loop/` 仅复盘  
 Commit: `2e3297a` (assignment-watch promote); docs on `main` after PR #2/#3
 
 ## Environment
@@ -48,7 +48,7 @@ Commit: `2e3297a` (assignment-watch promote); docs on `main` after PR #2/#3
 ## TTL=10 retest (2026-09-08)
 
 Command: `WHEN_HA_LEASE_TTL_SECONDS=10 WHEN_HA_HEARTBEAT_MS=2000` + `run-ha-3node-windows.ps1`  
-Evidence: `.loop/ha-3node-ttl10-summary.txt`
+Evidence: [`evidence/ha-3node-ttl10-summary.txt`](evidence/ha-3node-ttl10-summary.txt)
 
 | Step | Result |
 |------|--------|

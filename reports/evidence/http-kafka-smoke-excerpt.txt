@@ -1,0 +1,10 @@
+# HTTP single-node (2026-09-07)
+submit message_id=90450092263247872 PENDING
+query message_id=90450092263247872 status=DELIVERED sink_type=HTTP retry_count=0
+HTTP_SINK_SMOKE_PASS msg=90450092263247872
+
+# Kafka single-node (2026-09-07)
+submit message_id=90450158768128000 PENDING
+query message_id=90450158768128000 status=DELIVERED sink_type=KAFKA
+consume=kafka-smoke-hello
+KAFKA_SINK_SMOKE_PASS msg=90450158768128000

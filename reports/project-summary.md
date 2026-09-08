@@ -35,15 +35,15 @@
 
 ## 3. 全流程测试证据索引
 
-- 第一阶段：`.loop/lesson39-45-checklist.md`、`reports/first-stage-e2e/`
-- 副本/Controller：`.loop/judge-results.txt` lesson47/48
-- Kafka：`.loop/lesson49-kafka-e2e.log`、`run-kafka-sink-smoke-windows.ps1`
-- HTTP Sink：`run-http-sink-smoke-windows.ps1`（需 loopback allow）
-- 观测：lesson50 checklist + 本机 `:9090/:3000/:4317`
-- 管理台：lesson51 checklist
-- 打包镜像：`.loop/lesson52-docker-official.log`、`dist/*-lesson52.tgz`
-- HA：`reports/ha-3node-practical.md`、`.loop/ha-3node-watch.log`（DELIVERED after kill）
-- 汇总报告：`reports/integration-test-report.md` 等三份
+对外请先看 **[`reports/fork-verification-report.md`](fork-verification-report.md)**（含 message_id 与 `reports/evidence/` 摘录）。本机 `.loop/` 仅作复盘，不进 git。
+
+- 第一阶段：`reports/first-stage-e2e/`
+- HTTP / Kafka 单节点：`reports/evidence/http-kafka-smoke-excerpt.txt`
+- 批量 HA 100/100：`reports/evidence/ha-batch-summary.txt`
+- 杀主 + HTTP/Kafka：`reports/evidence/ha-3node-sinks-summary.txt`
+- TTL=10 失败：`reports/evidence/ha-3node-ttl10-summary.txt`
+- HA 叙事：`reports/ha-3node-practical.md`
+- 观测 / 管理台 / 打包：lesson50–52 + `reports/release-report.md`
 
 ## 4. 发布制品
 

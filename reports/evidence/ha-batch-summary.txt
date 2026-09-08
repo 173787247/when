@@ -1,0 +1,11 @@
+2026-09-07T21:04:31.5974106+08:00 === HA batch failover begin count=100 delay=90s ===
+2026-09-07T21:04:37.4437454+08:00 when-1 ready
+2026-09-07T21:04:43.1538435+08:00 when-2 ready
+2026-09-07T21:04:48.7184401+08:00 when-3 ready
+2026-09-07T21:05:06.8319761+08:00 nodes_ok via when-1
+2026-09-07T21:05:19.1193948+08:00 master=when-1 slave=when-2 tw=tw-0
+2026-09-07T21:05:22.7907720+08:00 submitted_all count=100
+2026-09-07T21:05:22.8005206+08:00 killing master when-1 pid=69608 before due
+2026-09-07T21:06:08.6574856+08:00 takeover new_master=when-2
+2026-09-07T21:06:59.4621503+08:00 final delivered=100 failed=0 pending=0 total=100
+2026-09-07T21:06:59.4678412+08:00 === HA batch failover PASS count=100 ===

@@ -3,7 +3,7 @@
 > **本仓库说明（独立 fork）**  
 > 这是 [oryx-labs/when](https://github.com/oryx-labs/when) 的独立 fork，用于 When 延时投递的实际落地实践：本机/Windows 联调与 HA 烟雾、打包发布修复、部署与运维手册，以及运行证据备份。  
 > **不代表**上游官方发布。仓库中的 When 业务代码仍遵循上游 **Apache License 2.0**（见根目录 [`LICENSE`](LICENSE)）；本仓库增量修改、报告与辅助脚本同样按 Apache-2.0 分发。  
-> 落地实践与缺口见：[`reports/project-summary.md`](reports/project-summary.md)、[`reports/ha-3node-practical.md`](reports/ha-3node-practical.md)；工作分支：`backup/lesson53-followalong`。
+> 验证报告：[`reports/fork-verification-report.md`](reports/fork-verification-report.md)。缺口与总结：[`reports/project-summary.md`](reports/project-summary.md)、[`reports/ha-3node-practical.md`](reports/ha-3node-practical.md)。工作分支：`backup/lesson53-followalong`。
 
 When 是一个面向企业内部、可私有部署的分布式延时投递组件。业务方提交带有到期时间和目标 Sink 的消息；系统可靠保存消息，在到期时触发投递。它解决“未来某个时刻可靠交付数据”，不执行任意业务代码，也不是消息队列、Cron 平台或工作流引擎。
 

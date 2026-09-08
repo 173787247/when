@@ -26,7 +26,8 @@ actually executed and prior lesson evidence. It does **not** claim `SECOND PHASE
 | Metrics `when_*` | PASS | includes `when_delivery_lag_seconds_*`, controller elections |
 | Kafka real delivery | PASS (prior) | lesson49 Kafka E2E |
 | Observability stack | PASS (prior) | lesson50 Prometheus + Grafana/OTEL |
-| Three-node HA failover <10s | FAIL | 3 nodes + create TW OK; kill Master → assignment stuck (see ha-3node-practical.md) |
+| Three-node HA failover (TTL=30) | PASS | DELIVERED after kill Master; takeover ~30–49s (not ≤10s). See `fork-verification-report.md` |
+| Three-node HA failover ≤10s | FAIL | TTL=10 unstable; see `evidence/ha-3node-ttl10-summary.txt` |
 | Module HA unit/IT | PASS (prior) | lesson47/48 cluster verify; this session recompile hit empty protobuf outputs |
 
 ## Live message summary

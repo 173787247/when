@@ -2,7 +2,8 @@
 
 对照上游 [AI 编程实施指引](https://github.com/oryx-labs/when/blob/main/docs/When%20%E9%A1%B9%E7%9B%AE%20AI%20%E7%BC%96%E7%A8%8B%E5%AE%9E%E6%96%BD%E6%8C%87%E5%BC%95.md) 第 9.2 / 阶段 C，以及 `./loop run --phase second` 期望。
 
-日期：2026-09-07 · 仓库：`173787247/when` only（不动 `oryx-labs/when`）
+日期：2026-09-08 · 仓库：`173787247/when` only（不动 `oryx-labs/when`）  
+对外总表：[`fork-verification-report.md`](fork-verification-report.md)
 
 ## 已落地（本机证据）
 
@@ -16,10 +17,10 @@
 | 3-node join + kill Master + **DELIVERED** | PASS（`reports/ha-3node-practical.md`） |
 | HA 稳定性复测（TTL=30） | PASS（接管偏慢，仍 DELIVERED） |
 | kill Controller → 重选 + 再投递 | PASS |
-| 批量 100 条到期前杀 Master | **PASS 100/100**（`.loop/ha-batch/summary.txt`） |
-| HTTP Sink 单节点烟雾 | **PASS**（`run-http-sink-smoke-windows.ps1`） |
-| Kafka Sink 单节点烟雾 | **PASS**（`run-kafka-sink-smoke-windows.ps1`） |
-| 三节点杀主 + HTTP/Kafka | **PASS**（`run-ha-3node-http-kafka-windows.ps1`；`.loop/ha-3node-sinks/summary.txt`） |
+| 批量 100 条到期前杀 Master | **PASS 100/100**（[`evidence/ha-batch-summary.txt`](evidence/ha-batch-summary.txt)） |
+| HTTP Sink 单节点烟雾 | **PASS**（id `90450092263247872`） |
+| Kafka Sink 单节点烟雾 | **PASS**（id `90450158768128000`） |
+| 三节点杀主 + HTTP/Kafka | **PASS**（[`evidence/ha-3node-sinks-summary.txt`](evidence/ha-3node-sinks-summary.txt)） |
 
 ## 仍缺（不能宣称 SECOND PHASE COMPLETE）
 
@@ -27,7 +28,7 @@
 |----|------|
 | `harness/release/*` | **上游 `oryx-labs/when@main` 也没有该目录**；`loop_runner` 仍引用 `run-ha-failover.sh` 等，属文档/Runner 超前于公开树 |
 | `./loop run --phase second` | 未跑；`loop validate` 要 `master` 分支名 |
-| 接管 ≤10s | 本机 TTL=30 约 30–49s；**2026-09-08 TTL=10 复测仍失败**（入轮前集群已 recovering，杀主后剧本挂死，见 `.loop/ha-3node-ttl10-summary.txt`） |
+| 接管 ≤10s | 本机 TTL=30 约 30–49s；**TTL=10 复测仍失败**（[`evidence/ha-3node-ttl10-summary.txt`](evidence/ha-3node-ttl10-summary.txt)） |
 | 杀 Controller 再决策 | **PASS**（重选 ~28s + 再投递 DELIVERED） |
 | 100 条消息到期前杀 Master | **PASS 100/100** |
 | HTTP+Kafka 并入三节点 HA 剧本 | **PASS**（P6/T13） |

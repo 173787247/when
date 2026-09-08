@@ -1,7 +1,8 @@
 # When 第二阶段 / 官方 Gate — PLAN（fork 落地）
 
 > 范围：`173787247/when` 独立 fork。不向 `oryx-labs/when` 推送或提 PR。  
-> 日期：2026-09-07
+> 日期：2026-09-08  
+> 对外验证总表：[`fork-verification-report.md`](fork-verification-report.md)
 
 ## 目标
 
@@ -20,10 +21,10 @@
 | T7 | 3 节点 kill Master → DELIVERED | `run-ha-3node-windows.ps1` |
 | T8 | kill Controller → 重选 + 再投递 | 同上脚本扩展 |
 | T9 | HA 稳定性复测 | `.loop/ha-3node-retest.log` |
-| T10 | 批量消息到期前杀 Master | **PASS 100/100** `.loop/ha-batch/summary.txt` |
-| T11 | HTTP Sink 本机 listener | **PASS**（`run-http-sink-smoke-windows.ps1`，需 `WHEN_HTTP_SINK_ALLOW_LOOPBACK=true`） |
-| T12 | Kafka Sink 单节点烟雾 | **PASS**（`run-kafka-sink-smoke-windows.ps1` + console-consumer） |
-| T13 | 三节点杀主 + HTTP/Kafka 投递 | **PASS**（`run-ha-3node-http-kafka-windows.ps1`；接管 ~49s WARN） |
+| T10 | 批量消息到期前杀 Master | **PASS 100/100** [`evidence/ha-batch-summary.txt`](evidence/ha-batch-summary.txt) |
+| T11 | HTTP Sink 本机 listener | **PASS** id `90450092263247872`（[`fork-verification-report.md`](fork-verification-report.md)） |
+| T12 | Kafka Sink 单节点烟雾 | **PASS** id `90450158768128000` consume=`kafka-smoke-hello` |
+| T13 | 三节点杀主 + HTTP/Kafka 投递 | **PASS** [`evidence/ha-3node-sinks-summary.txt`](evidence/ha-3node-sinks-summary.txt) |
 
 ## 官方缺失 / 环境限制 → PLAN（不做假 COMPLETE）
 
