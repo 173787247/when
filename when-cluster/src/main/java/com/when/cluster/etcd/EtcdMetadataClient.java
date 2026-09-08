@@ -22,12 +22,16 @@ import io.netty.handler.ssl.SslContextBuilder;
 import javax.net.ssl.SSLException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
@@ -53,6 +57,7 @@ public final class EtcdMetadataClient implements AutoCloseable {
     private final Duration timeout;
     private final Metrics metrics;
     private final TraceOperations traces;
+    private final ExecutorService callbackExecutor;
 
     public EtcdMetadataClient(EtcdClientConfig config) {
         this(buildClient(config), config.operationTimeout(), Metrics.noop(), TraceOperations.noop());
@@ -74,6 +79,11 @@ public final class EtcdMetadataClient implements AutoCloseable {
         this.timeout = Objects.requireNonNull(timeout, "timeout");
         this.metrics = Objects.requireNonNull(metrics, "metrics");
         this.traces = Objects.requireNonNull(traces, "traces");
+        this.callbackExecutor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "when-etcd-callbacks");
+            thread.setDaemon(true);
+            return thread;
+        });
     }
 
     public static EtcdMetadataClient fromEnvironment() {
@@ -198,18 +208,26 @@ public final class EtcdMetadataClient implements AutoCloseable {
             options.withRevision(startRevision);
         }
         Watch.Watcher watcher = watch.watch(bytes(key), options.build(), Watch.listener(response -> {
+            List<EtcdWatchEvent> events = new ArrayList<>();
             for (WatchEvent event : response.getEvents()) {
                 EtcdWatchEvent.Type type = event.getEventType() == WatchEvent.EventType.DELETE
                         ? EtcdWatchEvent.Type.DELETE
                         : EtcdWatchEvent.Type.PUT;
                 KeyValue keyValue = event.getKeyValue();
-                handler.accept(new EtcdWatchEvent(
+                events.add(new EtcdWatchEvent(
                         type,
                         text(keyValue.getKey()),
                         text(keyValue.getValue()),
                         keyValue.getModRevision()));
             }
-        }, errorHandler));
+            // jetcd delivers watches on its Vert.x loop; keepAlive shares that loop.
+            // Never run caller code (locks + blocking etcd) on it.
+            callbackExecutor.execute(() -> {
+                for (EtcdWatchEvent mapped : events) {
+                    handler.accept(mapped);
+                }
+            });
+        }, error -> callbackExecutor.execute(() -> errorHandler.accept(error))));
         return watcher::close;
     }
 
@@ -388,6 +406,7 @@ public final class EtcdMetadataClient implements AutoCloseable {
 
     @Override
     public void close() {
+        callbackExecutor.shutdownNow();
         client.close();
     }
 
@@ -506,6 +525,11 @@ public final class EtcdMetadataClient implements AutoCloseable {
 
         public Optional<Throwable> failure() {
             return failure.isDone() ? Optional.ofNullable(failure.getNow(null)) : Optional.empty();
+        }
+
+        public void whenDone(java.util.function.Consumer<Throwable> consumer) {
+            failure.whenComplete((error, joinError) ->
+                    consumer.accept(error != null ? error : joinError));
         }
 
         @Override

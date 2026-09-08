@@ -68,7 +68,7 @@
 ## 6. 未闭合缺口（诚实清单）
 
 1. `harness/release/` 缺失 → 官方发布候选/最终 gate 无法跑。  
-2. 本机 kill Master 接管约 **30s**（etcd lease TTL=30）；官方 ≤**10s** 预算未达标（TTL=10 复测接管 miss）。  
+2. 官方 6s/2s + 流式 keepAlive：杀 Master 接管 **4.38s**、Controller 重选 **4.32s**（[`evidence/ha-3node-keepalive-ttl6-summary.txt`](evidence/ha-3node-keepalive-ttl6-summary.txt)）。旧 TTL=30 / 周期心跳路径仍约 30–49s。  
 3. 单节点 `POST /admin/v1/timewheels` → 503（需 ≥2 节点）。  
 4. 业务 Submit 无 OpenAPI 级 Idempotency-Key。  
 5. K8s 三副本 live + 删 Pod 未做。  
@@ -83,7 +83,6 @@
 |--------|------|------|
 | P0 | 补齐或移植 `harness/release` | 才能诚实宣称第二阶段完成 |
 | P0 | 分支命名与 Runner（`master` vs `main`）对齐 | 否则 `loop validate` 不过 |
-| P1 | 缩短故障检测（更稳 etcd / 更低 TTL） | 逼近 ≤10s 接管 |
 | P1 | 业务幂等与 OpenAPI 对齐 | 避免调用方误用 |
 | P2 | K8s live + 社区演进项 | 鉴权、死信、更多 Sink 等 |
 
@@ -96,4 +95,4 @@
 
 ## 9. 一句话收口
 
-When 在本机已证明「延时投递主路径 + 三节点 kill Master 后投递恢复 + 制品/手册」可跑通；官方 `SECOND PHASE COMPLETE` 仍差 release harness 与 ≤10s 接管证据，按工程缺口继续，不口头完成。
+When 在本机已证明「延时投递主路径 + 官方 6s/2s 三节点 kill Master/Controller 后投递恢复 + 制品/手册」可跑通；官方 `SECOND PHASE COMPLETE` 仍差 `harness/release`，按工程缺口继续，不口头完成。

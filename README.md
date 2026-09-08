@@ -3,7 +3,30 @@
 > **本仓库说明（独立 fork）**  
 > 这是 [oryx-labs/when](https://github.com/oryx-labs/when) 的独立 fork，用于 When 延时投递的实际落地实践：本机/Windows 联调与 HA 烟雾、打包发布修复、部署与运维手册，以及运行证据备份。  
 > **不代表**上游官方发布。仓库中的 When 业务代码仍遵循上游 **Apache License 2.0**（见根目录 [`LICENSE`](LICENSE)）；本仓库增量修改、报告与辅助脚本同样按 Apache-2.0 分发。  
-> 验证报告：[`reports/fork-verification-report.md`](reports/fork-verification-report.md)。缺口与总结：[`reports/project-summary.md`](reports/project-summary.md)、[`reports/ha-3node-practical.md`](reports/ha-3node-practical.md)。工作分支：`backup/lesson53-followalong`。
+> 验证报告：[`reports/fork-verification-report.md`](reports/fork-verification-report.md)。缺口与总结：[`reports/project-summary.md`](reports/project-summary.md)、[`reports/ha-3node-practical.md`](reports/ha-3node-practical.md)。默认分支：`main`。
+
+## 本 fork 落地状态（2026-09-08）
+
+本机可测项以验证报告为准。**不宣称**官方 `SECOND PHASE COMPLETE`（上游公开树仍无 `harness/release/*`）。
+
+| 项 | 本机结果 |
+| --- | --- |
+| 官方 6s/2s 三节点杀 Master | 接管 **4.38s**，FILE `90633011313250304` DELIVERED |
+| 杀 Controller 后重选 | **4.32s**，FILE `90633096361156608` DELIVERED |
+| etcd 续约 | 流式 `lease.keepAlive`；watch 回调离开 jetcd Vert.x 循环 |
+| HTTP / Kafka Sink | 单节点与杀主后投递 PASS |
+| 批量 HA 100 | **100/100** DELIVERED |
+| 官方 `./loop run --phase second` | 未跑；缺 release harness |
+
+证据：[`reports/evidence/ha-3node-keepalive-ttl6-summary.txt`](reports/evidence/ha-3node-keepalive-ttl6-summary.txt)。
+
+Windows 复跑官方 6s/2s（原生 etcd 3.5.16 + Docker Redis）：
+
+```powershell
+$env:WHEN_HA_LEASE_TTL_SECONDS = "6"
+$env:WHEN_HA_HEARTBEAT_MS = "2000"
+.\harness\local\run-ha-3node-windows.ps1
+```
 
 When 是一个面向企业内部、可私有部署的分布式延时投递组件。业务方提交带有到期时间和目标 Sink 的消息；系统可靠保存消息，在到期时触发投递。它解决“未来某个时刻可靠交付数据”，不执行任意业务代码，也不是消息队列、Cron 平台或工作流引擎。
 
@@ -19,7 +42,7 @@ When 的目标规格提供跨语言 HTTP 接入、HTTP/Kafka Sink、Redis 消息
 
 ## 当前实现状态
 
-仓库当前完成的是第 39—45 节的首次整合阶段，而非完整 HA MVP。下表区分已验证能力和后续目标，避免把规划写成已交付功能。
+下面这张表是上游首阶段（第 39—45 节）README 原文口径，用来区分「当时已验证」和「当时尚未交付」。**本 fork 已继续做到第 47—53 节可测项**：HTTP/Kafka Sink、三节点 HA、管理台与制品均有本机证据，见上一节与验证报告。官方第二阶段 COMPLETE 仍未宣称。
 
 | 已实现并有测试/运行证据 | 尚未作为本阶段交付验证 |
 | --- | --- |
@@ -201,4 +224,4 @@ done < <(git for-each-ref --format='%(refname:short)' refs/heads | sort)
 
 新增能力先补充 delta spec 和自动验收，再实现与 Review。公共模型、协议、状态机、存储 Key 或故障语义发生变化时，应先更新基准文档并完成架构 Review；不要让模块各自发明兼容性约定。
 
-完整 HA、真实 Sink、可观测性、管理台和生产部署属于第 47—53 节及之后的演进阶段，详见 [AI 编程实施指引](docs/When%20项目%20AI%20编程实施指引.md)。
+完整 HA、真实 Sink、可观测性、管理台和生产部署属于第 47—53 节及之后的演进阶段，详见 [AI 编程实施指引](docs/When%20项目%20AI%20编程实施指引.md)。本 fork 的本机落地进度见文首「本 fork 落地状态」。

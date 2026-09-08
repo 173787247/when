@@ -32,8 +32,8 @@
 |----|----|------|----------|------|--------|
 | P1 | `harness/release/*.sh` | **上游 `main` 公开树也没有**；Runner 引用超前 | 上游发布后只读对照，再在 fork 移植或写 Windows 等价门；此前以本地烟雾+报告为准 | 上游补齐或课程下发 | P0 |
 | P2 | `./loop run --phase second` | 缺 P1；`loop validate` 要求分支名 `master` | fork 可另开文档说明用 `main`；不改 upstream 规则 | P1 | P0 |
-| P3 | 接管 ≤10s | 原生 etcd 3.5.16 / 3.7.1 直连后官方 6s/2s **仍 FAIL**（jetcd `etcd_heartbeat` EtcdClientException，杀主前 recovering）；默认仍 TTL=30 | 不再靠换 etcd 进程；要过 10s 需查 KeepAlive / 加长心跳实现 | jetcd + Windows | P1 |
-| P4 | Controller 重选 ≤课程阈值 | 本机 ~28s | 同 P3 | P3 | P1 |
+| P3 | 接管 ≤10s | **已关闭**：流式 keepAlive + 原生 etcd 3.5.16，官方 6s/2s 接管 **4.38s** | [`evidence/ha-3node-keepalive-ttl6-summary.txt`](evidence/ha-3node-keepalive-ttl6-summary.txt) | jetcd 流式 keepAlive | done |
+| P4 | Controller 重选 ≤课程阈值 | **已关闭**：同跑次重选 **4.32s** | 同 P3 | P3 | done |
 | P5 | 100 条批量 HA | **已关闭（T10 PASS）** | — | — | done |
 | P6 | HA 剧本内嵌 HTTP+Kafka Sink | **已关闭（T13 PASS）** | — | — | done |
 | P7 | K8s 三副本删 Pod | 本机无课内 K8s 集群 live | 有集群后再跑 kustomize 部署+删 Master Pod | 可用 K8s | P2 |

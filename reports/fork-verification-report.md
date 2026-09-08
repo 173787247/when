@@ -3,7 +3,7 @@
 > 仓库：https://github.com/173787247/when  
 > 日期：2026-09-08  
 > 范围：本机可测项。不向 `oryx-labs/when` 推送或提 PR。  
-> **不宣称**官方 `SECOND PHASE COMPLETE`（缺 `harness/release`、接管未达 ≤10s）。
+> **不宣称**官方 `SECOND PHASE COMPLETE`（缺 `harness/release`）。本机官方 6s/2s 接管已过 ≤10s。
 
 对照：[`SECOND_PHASE_PLAN.md`](SECOND_PHASE_PLAN.md)、[`second-phase-gap.md`](second-phase-gap.md)、[`ha-3node-practical.md`](ha-3node-practical.md)。  
 本机 JVM/脚本全文在 `.loop/`（gitignored）；下面把**可对外出示的结论和关键字段**写进本报告，并附 [`evidence/`](evidence/) 摘录。
@@ -24,13 +24,13 @@
 | T3 / T12 | Kafka 真投递 | **PASS** | `run-kafka-sink-smoke-windows.ps1`；id `90450158768128000`；consume=`kafka-smoke-hello` |
 | T4 | `/health` `/ready` `/metrics` | **PASS** | mgmt `:18081` |
 | T5 | TGZ / Dockerfile / kustomize | **PARTIAL** | 制品可解压；`check-release` Git Bash FAIL（P8） |
-| T7 | 3 节点杀 Master → DELIVERED | **PASS** | `run-ha-3node-windows.ps1`；接管 ~30–45s |
-| T8 | 杀 Controller → 重选 + 再投递 | **PASS** | 同上；重选 ~28s |
+| T7 | 3 节点杀 Master → DELIVERED | **PASS** | 流式 keepAlive + 官方 6s/2s：接管 **4.38s** |
+| T8 | 杀 Controller → 重选 + 再投递 | **PASS** | 同上；重选 **4.32s** |
 | T9 | HA 稳定性复测 | **PASS** | TTL=30，仍 DELIVERED |
 | T10 | 批量 100 条到期前杀 Master | **PASS 100/100** | [`evidence/ha-batch-summary.txt`](evidence/ha-batch-summary.txt) |
 | T11 | HTTP Sink 本机 listener | **PASS** | `WHEN_HTTP_SINK_ALLOW_LOOPBACK=true`；id `90450092263247872` |
 | T13 | 杀主后 HTTP+Kafka | **PASS** | HTTP `90451296410144768`；Kafka `90451296686968832`；接管 ~49s WARN |
-| P3 | 接管 ≤10s | **FAIL** | 停 22 个无关容器后再跑官方 6s/2s，仍杀主前 `recovering`；见 [`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt) |
+| P3 | 接管 ≤10s | **PASS** | 原生 etcd 3.5.16 + 流式 keepAlive；见 [`evidence/ha-3node-keepalive-ttl6-summary.txt`](evidence/ha-3node-keepalive-ttl6-summary.txt) |
 | P7 | K8s 删 Pod | **未测** | 仅有 Docker kubectl，无活集群 |
 | P8 | `check-release.sh` | **FAIL** | Git Bash：`tar -tz` 28 行 / unique 12 |
 
@@ -60,19 +60,29 @@
 - Kafka `90451296686968832` DELIVERED；consume=`ha-kafka-sink`
 - 摘录：[`evidence/ha-3node-sinks-summary.txt`](evidence/ha-3node-sinks-summary.txt)
 
-### 官方 6s/2s（Docker 瘦身 + 本机原生 etcd）
+### 官方 6s/2s（流式 keepAlive，2026-09-08）
 
-1. 停 22 个无关容器后再跑 Docker etcd：**仍 FAIL**（[`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt)）。
-2. 本机装了原生 etcd：winget **3.7.1**（health ~3ms）以及与镜像同版本的 **3.5.16**（`C:\Users\rchua\tools\etcd-v3.5.16`，health ~5ms）。`docker stop when-local-etcd` 后直连 `127.0.0.1:2379`。
-3. 原生 3.5.16 + TTL=6 **仍 FAIL**，形态相同：杀主前 `INTERNAL_ERROR` / `recovering`；`when-1` 日志 `etcd_heartbeat ... EtcdClientException`；杀主后剧本挂死。
-4. 摘录：[`evidence/ha-3node-native-etcd-ttl6-summary.txt`](evidence/ha-3node-native-etcd-ttl6-summary.txt)
+环境：原生 etcd **3.5.16** `127.0.0.1:2379` + Docker Redis；`WHEN_HA_LEASE_TTL_SECONDS=6` / `WHEN_HA_HEARTBEAT_MS=2000`。
 
-结论：≤10s 门**不是**「换原生 etcd 就能过」。短租约下 jetcd KeepAlive 在本机 Windows 三 JVM 上会断，成员被误判下线。默认可跑项仍用 TTL=30。
+续约从周期 `keepAliveOnce` 改为 jetcd 流式 `keepAlive`；watch 回调从 vert.x 事件循环挪走，避免 Controller 持锁做阻塞 etcd 时饿死续约。
+
+| 步 | 结果 |
+|----|------|
+| 3 节点 ready + 成员在线 | PASS（无杀主前 recovering） |
+| `tw-0` `running`/`in_sync` | PASS（when-1 Master / when-2 Slave） |
+| 杀 Master when-1 | 接管 when-2 **4.38s** |
+| 消息 `90633011313250304` | DELIVERED |
+| 杀 Controller when-3 | 重选 when-2 **4.32s** |
+| 消息 `90633096361156608` | DELIVERED |
+
+摘录：[`evidence/ha-3node-keepalive-ttl6-summary.txt`](evidence/ha-3node-keepalive-ttl6-summary.txt)
+
+此前 Docker / 原生 etcd + 周期心跳的 FAIL 记录仍保留：[`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt)、[`evidence/ha-3node-native-etcd-ttl6-summary.txt`](evidence/ha-3node-native-etcd-ttl6-summary.txt)。
 
 ## 明确不做 / 未闭合
 
 1. 官方 `harness/release/*` 与 `./loop run --phase second`（上游公开树也没有该目录）。
-2. 接管 / Controller 重选未达课程秒级预算（受 Docker etcd + TTL=30 约束）。
+2. 官方 `SECOND PHASE COMPLETE` 仍缺 `harness/release`（P1/P2）。本机 6s/2s 接管与重选已达课程秒级预算。
 3. K8s 三副本 live 删 Pod。
 4. 业务 Submit 的 OpenAPI `Idempotency-Key`。
 
@@ -83,7 +93,9 @@
 .\harness\local\run-http-sink-smoke-windows.ps1
 .\harness\local\run-kafka-sink-smoke-windows.ps1
 
-# 三节点 FILE + 杀 Master / Controller
+# 三节点 FILE + 杀 Master / Controller（官方 6s/2s）
+$env:WHEN_HA_LEASE_TTL_SECONDS = "6"
+$env:WHEN_HA_HEARTBEAT_MS = "2000"
 .\harness\local\run-ha-3node-windows.ps1
 
 # 三节点杀主 + HTTP/Kafka
