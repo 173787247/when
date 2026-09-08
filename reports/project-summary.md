@@ -16,7 +16,7 @@
 | 接入与跨节点路由 | `when-ingress-router` / `when-app` | FirstStageAcceptance PASS |
 | Master/Slave 副本 | `when-cluster` replica | 模块测 PASS；三节点 kill Master 后 **DELIVERED PASS**（接管 ~30s） |
 | Controller / rebalance | `when-cluster` controller | 模块测 PASS；选主接线 + assignment-watch promote 已落地 |
-| HTTP / Kafka / FILE Sink | `when-sink-*` / `when-delivery` | 模块 + Kafka/FILE E2E PASS |
+| HTTP / Kafka / FILE Sink | `when-sink-*` / `when-delivery` | 模块 + FILE/Kafka/HTTP 单节点烟雾 PASS |
 | 可观测 | `/health` `/ready` `/metrics` + OTLP | 本机 Prometheus/Grafana 栈 PASS |
 | 管理台 | `when-admin-api` + Vue | GET/构建 PASS；建轮需多节点 |
 | 制品 | TGZ / OCI / K8s base | 第 52 基本 PASS（MSYS tar 检查例外） |
@@ -37,7 +37,8 @@
 
 - 第一阶段：`.loop/lesson39-45-checklist.md`、`reports/first-stage-e2e/`
 - 副本/Controller：`.loop/judge-results.txt` lesson47/48
-- Kafka：`.loop/lesson49-kafka-e2e.log`
+- Kafka：`.loop/lesson49-kafka-e2e.log`、`run-kafka-sink-smoke-windows.ps1`
+- HTTP Sink：`run-http-sink-smoke-windows.ps1`（需 loopback allow）
 - 观测：lesson50 checklist + 本机 `:9090/:3000/:4317`
 - 管理台：lesson51 checklist
 - 打包镜像：`.loop/lesson52-docker-official.log`、`dist/*-lesson52.tgz`
