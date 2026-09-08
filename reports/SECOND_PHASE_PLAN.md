@@ -32,7 +32,7 @@
 |----|----|------|----------|------|--------|
 | P1 | `harness/release/*.sh` | **上游 `main` 公开树也没有**；Runner 引用超前 | 上游发布后只读对照，再在 fork 移植或写 Windows 等价门；此前以本地烟雾+报告为准 | 上游补齐或课程下发 | P0 |
 | P2 | `./loop run --phase second` | 缺 P1；`loop validate` 要求分支名 `master` | fork 可另开文档说明用 `main`；不改 upstream 规则 | P1 | P0 |
-| P3 | 接管 ≤10s | 2026-09-08 再测 TTL=10/心跳 2s：入轮前已 INTERNAL_ERROR + recovering/out_of_sync，杀主后脚本挂死，**未观察到 ≤10s 接管**；默认仍 TTL=30 | 换本机/WSL 原生 etcd 后再测官方 6s/2s；本机默认保持 30s | 更干净 etcd | P1 |
+| P3 | 接管 ≤10s | 停 22 个无关容器后官方 6s/2s **仍 FAIL**（杀主前 recovering，与 TTL=10 同形态）；默认仍 TTL=30 | 换 WSL/本机原生 etcd 再测；不要再靠加 TTL 或停容器 | 原生 etcd | P1 |
 | P4 | Controller 重选 ≤课程阈值 | 本机 ~28s | 同 P3 | P3 | P1 |
 | P5 | 100 条批量 HA | **已关闭（T10 PASS）** | — | — | done |
 | P6 | HA 剧本内嵌 HTTP+Kafka Sink | **已关闭（T13 PASS）** | — | — | done |

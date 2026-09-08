@@ -1,0 +1,16 @@
+# 2026-09-08 slim Docker (only when-local-redis/etcd/kafka) + official lease 6s / heartbeat 2s
+2026-09-08T09:38:31.7161793+08:00 === HA 3-node smoke begin lease_ttl=6s heartbeat=2000ms ===
+2026-09-08T09:38:37.5539593+08:00 when-1 ready
+2026-09-08T09:38:43.1000557+08:00 when-2 ready
+2026-09-08T09:38:48.8687683+08:00 when-3 ready
+2026-09-08T09:39:07.0039533+08:00 nodes_ok via when-1 (3 ready)
+2026-09-08T09:39:07..13 timewheels_wait_1..7 items=[]
+2026-09-08T09:39:19.3045466+08:00 timewheels_wait_8 INTERNAL_ERROR
+2026-09-08T09:39:25.3439640+08:00 timewheels_wait_9 INTERNAL_ERROR
+2026-09-08T09:39:31.3885767+08:00 timewheels_wait_10 INTERNAL_ERROR
+2026-09-08T09:39:37.4322995+08:00 timewheels_wait_11 INTERNAL_ERROR
+2026-09-08T09:39:39.1708927+08:00 tw-0 master=when-2 slave=when-1 status=recovering sync_state=out_of_sync assignment_version=3
+2026-09-08T09:39:39.4250410+08:00 submit message_id=90622045766815744 PENDING
+2026-09-08T09:39:39.4402171+08:00 killing master when-2
+# no takeover / DELIVERED; harness hung and was stopped
+P3_TTL6_SLIM_DOCKER_FAIL

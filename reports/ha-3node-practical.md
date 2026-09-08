@@ -58,3 +58,11 @@ Evidence: [`evidence/ha-3node-ttl10-summary.txt`](evidence/ha-3node-ttl10-summar
 | Takeover ≤10s | **FAIL / 剧本挂死**（杀主后无 takeover 日志，需手动停进程） |
 
 结论：本机 Docker Desktop etcd **不能**用官方 6s/10s TTL 做 10 秒门；继续 TTL=30。
+
+## Official 6s/2s after slim Docker (2026-09-08)
+
+Stopped 22 unrelated containers; only `when-local-redis` / `when-local-etcd` / `when-local-kafka` left.  
+Command: `WHEN_HA_LEASE_TTL_SECONDS=6 WHEN_HA_HEARTBEAT_MS=2000`  
+Evidence: [`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt)
+
+Same failure as TTL=10: `INTERNAL_ERROR` then `recovering/out_of_sync` **before** kill; harness hung after killing `when-2`. Slimming Docker did **not** unlock the 10s gate.

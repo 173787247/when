@@ -30,7 +30,7 @@
 | T10 | 批量 100 条到期前杀 Master | **PASS 100/100** | [`evidence/ha-batch-summary.txt`](evidence/ha-batch-summary.txt) |
 | T11 | HTTP Sink 本机 listener | **PASS** | `WHEN_HTTP_SINK_ALLOW_LOOPBACK=true`；id `90450092263247872` |
 | T13 | 杀主后 HTTP+Kafka | **PASS** | HTTP `90451296410144768`；Kafka `90451296686968832`；接管 ~49s WARN |
-| P3 | 接管 ≤10s（TTL=10） | **FAIL** | [`evidence/ha-3node-ttl10-summary.txt`](evidence/ha-3node-ttl10-summary.txt) |
+| P3 | 接管 ≤10s | **FAIL** | 停 22 个无关容器后再跑官方 6s/2s，仍杀主前 `recovering`；见 [`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt) |
 | P7 | K8s 删 Pod | **未测** | 仅有 Docker kubectl，无活集群 |
 | P8 | `check-release.sh` | **FAIL** | Git Bash：`tar -tz` 28 行 / unique 12 |
 
@@ -60,12 +60,16 @@
 - Kafka `90451296686968832` DELIVERED；consume=`ha-kafka-sink`
 - 摘录：[`evidence/ha-3node-sinks-summary.txt`](evidence/ha-3node-sinks-summary.txt)
 
-### TTL=10 复测（2026-09-08）
+### 官方 6s/2s 复测（2026-09-08，已停无关容器）
 
-- 三节点 `/ready` 后，**未杀主**即出现 `INTERNAL_ERROR`，轮子 `recovering` / `out_of_sync`
-- 杀 `when-2` 后剧本挂死，无 ≤10s 接管日志
-- 本机默认仍用 TTL=30
-- 摘录：[`evidence/ha-3node-ttl10-summary.txt`](evidence/ha-3node-ttl10-summary.txt)
+先 `docker stop` 22 个无关容器，只留 `when-local-redis` / `when-local-etcd` / `when-local-kafka`，再跑课设 **TTL=6 / 心跳 2s**。
+
+- 三节点 `/ready`、成员齐
+- **未杀主**即 `INTERNAL_ERROR`，轮子 `recovering` / `out_of_sync`（assignment_version=3）
+- 杀 `when-2` 后剧本挂死，无 ≤10s 接管
+- 与早先 TTL=10（容器挤时）同一失败形态 → **不是旁路容器抢资源这么简单**，Docker Desktop etcd 短租约仍不稳
+- 摘录：[`evidence/ha-3node-ttl6-summary.txt`](evidence/ha-3node-ttl6-summary.txt)；对照 [`evidence/ha-3node-ttl10-summary.txt`](evidence/ha-3node-ttl10-summary.txt)
+- 本机默认可跑项仍用 TTL=30
 
 ## 明确不做 / 未闭合
 
